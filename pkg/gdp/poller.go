@@ -1,0 +1,258 @@
+package gdp
+
+import (
+	"bufio"
+	"context"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/randomizedcoder/gdp/pkg/gdp_config"
+)
+
+func (g *GDP) Poller(ctx context.Context, wg *sync.WaitGroup) {
+
+	defer wg.Done()
+
+	if g.debugLevel > 10 {
+		log.Printf("Poller started")
+	}
+
+	<-g.DestinationReady
+	if g.debugLevel > 10 {
+		log.Printf("Poller DestinationReady")
+	}
+
+	ticker := time.NewTicker(g.config.PollFrequency.AsDuration())
+	//wf := g.config.DestWriteFiles
+
+breakPoint:
+	for pollingLoops := uint64(1); MaxLoopsOrForEver(pollingLoops, g.config.MaxLoops); pollingLoops++ {
+
+		g.pC.WithLabelValues("Poller", "pollingLoops", "count").Inc()
+		if g.debugLevel > 10 {
+			log.Printf("Poller pollingLoops:%d", pollingLoops)
+		}
+
+		select {
+
+		case <-ctx.Done():
+			break breakPoint
+
+		case <-ticker.C:
+			g.pC.WithLabelValues("Poller", "ticker", "count").Inc()
+
+			if g.debugLevel > 10 {
+				log.Printf("Poller <-ticker.C pollingLoops:%d", pollingLoops)
+			}
+
+			pollStartTime := time.Now()
+
+			g.performPoll(ctx, pollingLoops)
+
+			pollDuration := time.Since(pollStartTime)
+
+			if g.debugLevel > 10 {
+				log.Printf("Poller pollingLoops:%d pollDuration:%0.4fs %dms",
+					pollingLoops, pollDuration.Seconds(), pollDuration.Milliseconds())
+			}
+
+			g.pH.WithLabelValues("Poller", "pollDuration", "count").Observe(pollDuration.Seconds())
+
+		}
+
+	}
+
+	g.pC.WithLabelValues("Poller", "complete", "count").Inc()
+}
+
+// MaxLoopsOrForEver returns true if maxloops == 0, or pollingLoops < maxloops
+// This function just allows us to embed if logic into the main pollingLoops for statement
+func MaxLoopsOrForEver(pollingLoops uint64, maxLoops uint64) bool {
+	if maxLoops != 0 {
+		if pollingLoops > maxLoops {
+			return false
+		}
+	}
+	return true
+}
+
+func (g *GDP) performPoll(ctx context.Context, pollingLoops uint64) error {
+
+	startTime := time.Now()
+	defer func() {
+		g.pH.WithLabelValues("performPoll", "complete", "count").Observe(time.Since(startTime).Seconds())
+	}()
+	g.pC.WithLabelValues("performPoll", "start", "count").Inc()
+
+	if g.debugLevel > 10 {
+		log.Println("performPoll start")
+	}
+
+	metrics, err := g.getCountMetrics(ctx)
+	if err != nil {
+		return err
+	}
+
+	envelope, err := g.parseMetricLinesRegex(metrics, startTime, pollingLoops)
+	if err != nil {
+		return err
+	}
+
+	wg := new(sync.WaitGroup)
+	i := 0
+	g.MarshalConfigs.Range(func(key, value interface{}) bool {
+		mc := value.(*gdp_config.MarshalConfig)
+		wg.Add(1)
+		go g.sendEnvelopeWithMarshalConfig(ctx, wg, mc, envelope, i)
+		//time.Sleep(1 * time.Second)
+		if g.debugLevel > 10 {
+			log.Printf("performPoll i:%d, mc:%v", i, mc)
+		}
+		return true
+	})
+
+	wg.Wait()
+
+	if g.debugLevel > 10 {
+		log.Println("performPoll wg.Wait()")
+	}
+
+	// Reset prom records and envelope, and return to the sync.Pools
+	for _, pc := range envelope.Rows {
+		pc.Reset()
+		g.GDPRecordPool.Put(pc)
+	}
+	envelope.Reset()
+	g.GDPEnvelopePool.Put(envelope)
+
+	if g.debugLevel > 10 {
+		log.Printf("performPoll complete:%0.4f ms:%d", time.Since(startTime).Seconds(), time.Since(startTime).Microseconds())
+	}
+
+	return nil
+}
+
+// getCountMetrics fetches the metrics from prometheus, and then filters
+// them for only the count metrics
+func (g *GDP) getCountMetrics(ctx context.Context) ([]string, error) {
+
+	if g.debugLevel > 10 {
+		log.Println("getCountMetrics start")
+	}
+
+	metrics, err := g.fetchPrometheusMetrics(
+		ctx,
+		g.config.RequestConfig.MetricsUrl,
+		g.config.RequestConfig.RequestBackoff.AsDuration(),
+		g.config.RequestConfig.MaxRetries)
+
+	if err != nil {
+		if g.debugLevel > 10 {
+			log.Printf("Failed to fetch Prometheus metrics: %v", err)
+		}
+		return nil, err
+	}
+
+	counts := g.filterCounts(metrics, g.config.RequestConfig.AllowPrefix)
+
+	return counts, nil
+}
+
+const (
+	fetchPrometheusMetricsBackoffCst = 100 * time.Millisecond
+)
+
+// fetchPrometheusMetrics is a simple http requester with a timeout, retry logic, and a small
+// pause between requests
+func (g *GDP) fetchPrometheusMetrics(
+	_ context.Context,
+	url string,
+	timeout time.Duration,
+	maxRetries uint32) (string, error) {
+
+	startTime := time.Now()
+	defer func() {
+		g.pH.WithLabelValues("fetchPrometheusMetrics", "complete", "count").Observe(time.Since(startTime).Seconds())
+	}()
+	g.pC.WithLabelValues("fetchPrometheusMetrics", "start", "count").Inc()
+
+	client := &http.Client{
+		Timeout: timeout,
+	}
+
+	var (
+		resp *http.Response
+		err  error
+	)
+
+	for i := uint32(0); i < maxRetries; i++ {
+
+		resp, err = client.Get(url)
+
+		if err == nil && resp.StatusCode == http.StatusOK {
+			defer resp.Body.Close()
+			bodyBytes, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return "", fmt.Errorf("failed to read response body: %w", err)
+			}
+			g.pC.WithLabelValues("fetchPrometheusMetrics", "bodyBytes", "count").Add(float64(len(bodyBytes)))
+
+			if i == 0 {
+				g.pC.WithLabelValues("fetchPrometheusMetrics", "firstShot", "count").Inc()
+			}
+			g.pC.WithLabelValues("fetchPrometheusMetrics", "success", "count").Inc()
+			return string(bodyBytes), nil
+		}
+
+		if err != nil {
+			if g.debugLevel > 10 {
+				log.Printf("Attempt %d failed: %v", i, err)
+			}
+		} else if resp != nil {
+			if g.debugLevel > 10 {
+				log.Printf("Attempt %d failed: status code %d", i, resp.StatusCode)
+			}
+			g.pC.WithLabelValues("fetchPrometheusMetrics", strconv.Itoa(resp.StatusCode), "error").Inc()
+		}
+
+		if i < maxRetries-1 {
+			time.Sleep(fetchPrometheusMetricsBackoffCst)
+		}
+		g.pC.WithLabelValues("fetchPrometheusMetrics", "retry", "count").Inc()
+
+	}
+
+	g.pC.WithLabelValues("fetchPrometheusMetrics", "overall", "error").Inc()
+	return "", fmt.Errorf("failed to fetch metrics after %d retries: %v", maxRetries, err)
+}
+
+func (g *GDP) filterCounts(metrics string, allowPrefix string) (counts []string) {
+	var (
+		filtered float64
+	)
+	scanner := bufio.NewScanner(strings.NewReader(metrics))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, allowPrefix) {
+			counts = append(counts, line)
+			continue
+		}
+		filtered++
+	}
+
+	if err := scanner.Err(); err != nil {
+		g.pC.WithLabelValues("filterCounts", "scanner", "error").Inc()
+		log.Printf("Error during scanning: %v", err)
+	}
+
+	g.pC.WithLabelValues("filterCounts", "counts", "count").Add(float64(len(counts)))
+	g.pC.WithLabelValues("filterCounts", "filtered", "count").Add(filtered)
+
+	return counts
+}
