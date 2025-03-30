@@ -1,0 +1,248 @@
+//
+// GDP - config
+//
+
+
+syntax = "proto3";
+
+package gdp_config.v1;
+
+option go_package = "./pkg/gdp_config";
+
+import "google/protobuf/duration.proto";
+// import "google/protobuf/timestamp.proto";
+// import "google/api/annotations.proto";
+
+// https://github.com/bufbuild/protovalidate
+// https://buf.build/bufbuild/protovalidate/docs/main:buf.validate
+// https://github.com/bufbuild/protovalidate/tree/main/examples
+// https://buf.build/docs/lint/rules/?h=protovalidate#protovalidate
+// https://github.com/bufbuild/protovalidate?tab=readme-ov-file#implementing-validation-constraints
+
+// https://github.com/google/cel-spec
+// https://github.com/google/cel-spec/blob/master/doc/langdef.md
+
+import "buf/validate/validate.proto";
+
+// https://protobuf.dev/programming-guides/proto3/#scalar
+
+// gdp configuration
+message GdpConfig {
+
+	// Poll frequency
+	// This is how often gdp polls it's metric end point
+	// https://pkg.go.dev/google.golang.org/protobuf/types/known/durationpb
+	google.protobuf.Duration poll_frequency          = 20 [
+		(buf.validate.field).required = true,
+		(buf.validate.field).duration = {
+			gt: {
+				seconds: 0
+			}
+			lte: {
+				seconds: 604800 // 604800s = 7 days
+			}
+	}];
+
+	// Poll timeout per name space
+	// Must be less than the poll frequency
+	google.protobuf.Duration poll_timeout            = 30 [
+		(buf.validate.field).required = true,
+		(buf.validate.field).duration = {
+			gt: {
+				seconds: 0
+			}
+			lte: {
+				seconds: 604800 // 604800s = 7 days
+			}
+	}];
+
+  option (buf.validate.message).cel = {
+    id: "Gdp_Config.poll",
+    message: "Poll timeout must be less than poll poll_frequency",
+    expression: "this.poll_frequency > this.poll_timeout"
+  };
+
+	// Maximum number of loops, or zero (0) for forever
+	uint64 max_loops                                 = 40 [
+		(buf.validate.field).required = false,
+		(buf.validate.field).uint64 = {
+			gte: 0,
+			lte: 100000
+	}];
+
+	// kafka:127.0.0.1:9092, or null:
+	string dest                                      = 130 [
+		(buf.validate.field).required = true,
+		(buf.validate.field).string = {
+			min_len: 4,
+			max_len: 40,
+	}];
+
+	// Write marhselled data to writeFiles number of files ( to allow debugging of the serialization )
+	// gdp will capture this many examples of the marshalled data
+	uint32 dest_write_files                          = 140 [
+		(buf.validate.field).required = false,
+		(buf.validate.field).uint32 = {
+			gte: 0,
+			lte: 1000
+	}];
+
+	// PromProtoFile
+	string prom_proto_file                           = 150 [
+		(buf.validate.field).required = false,
+		(buf.validate.field).string = {
+			min_len: 1,
+			max_len: 80,
+	}];
+
+	// PromListProtoFile
+	string prom_list_proto_file                      = 160 [
+		(buf.validate.field).required = false,
+		(buf.validate.field).string = {
+			min_len: 1,
+			max_len: 80,
+	}];
+
+	// Kafka schema registry url
+	string kafka_schema_url                          = 170 [
+		(buf.validate.field).required = false,
+		(buf.validate.field).string = {
+			min_len: 1,
+			max_len: 60,
+	}];
+
+	// Kafka Produce context timeout.  Use 0 for no context timeout
+	// Recommend a small timeout, like 1-2 seconds
+	// kgo seems to have a bug, because the timeout is always expired
+	google.protobuf.Duration kafka_produce_timeout   = 180 [
+		(buf.validate.field).required = false,
+		(buf.validate.field).duration = {
+			gte: {
+				seconds: 0
+			}
+			lte: {
+				seconds: 600 // 600s = 10 minutes
+			}
+	}];
+
+	// DebugLevel
+	uint32 debug_level                               = 190 [
+		(buf.validate.field).required = true,
+		(buf.validate.field).uint32 = {
+			gte: 0,
+			lte: 1000
+	}];
+
+		// kafka DebugLevel
+		uint32 kafka_debug_level                       = 200 [
+			(buf.validate.field).required = true,
+			(buf.validate.field).uint32 = {
+				gte: 0,
+				lte: 1000
+		}];
+
+	// Label applied to the protobuf
+	string label                                      = 210 [
+		(buf.validate.field).required = false,
+		(buf.validate.field).string = {
+			// min_len: 1,
+			max_len: 40,
+	}];
+
+	// Tag applied to the protobuf
+	string tag                                       = 220 [
+		(buf.validate.field).required = false,
+		(buf.validate.field).string = {
+			// min_len: 1,
+			max_len: 40,
+	}];
+
+	message PromethusRequestConfig {
+
+		// Prometheus metrics url
+		// e.g. http://localhost:8888/metrics
+		string metrics_url                             = 10 [
+			(buf.validate.field).required = true,
+			(buf.validate.field).string = {
+				min_len: 10,
+				max_len: 80,
+		}];
+
+		// allowPrefix for the filtering
+		string allow_prefix                            = 20 [
+			(buf.validate.field).required = true,
+			(buf.validate.field).string = {
+				min_len: 1,
+				max_len: 80,
+		}];
+
+		// promethus max retries
+		uint32 max_retries                             = 30 [
+			(buf.validate.field).required = true,
+			(buf.validate.field).uint32 = {
+				gte: 0,
+				lte: 1000
+		}];
+
+		google.protobuf.Duration request_backoff       = 40 [
+			(buf.validate.field).required = true,
+			(buf.validate.field).duration = {
+				gt: {
+					seconds: 0
+				}
+				lte: {
+					seconds: 900 // 900s = 15 mins
+				}
+		}];
+	};
+
+	PromethusRequestConfig request_config            = 250;
+
+};
+
+// MarshalConfig is the definition of the mashaling the GDP is going
+// to perform
+message MarshalConfig {
+
+	// Protosingle, Protobuf, ProtobufList
+	string marshal_type                               = 10 [
+		(buf.validate.field).required = true,
+		(buf.validate.field).string = {
+			min_len: 1,
+			max_len: 80,
+	}];
+
+	bool kafka_header                                 = 20 [
+		(buf.validate.field).required = true
+	];
+
+	// marshal type determines if protodelimiting occurs
+	// but we're documenting it to make it clear
+	bool protodelim                                   = 30 [
+		(buf.validate.field).required = true
+	];
+
+	uint32 schema_i_d                                  = 40 [
+		(buf.validate.field).required = true,
+		(buf.validate.field).uint32 = {
+			gte: 0,
+			lte: 10000
+	}];
+
+	string filename                                   = 50 [
+		(buf.validate.field).required = true,
+		(buf.validate.field).string = {
+			min_len: 1,
+			max_len: 80,
+	}];
+
+	string topic                                      = 60 [
+		(buf.validate.field).required = true,
+		(buf.validate.field).string = {
+			min_len: 1,
+			max_len: 80,
+	}];
+
+};
+
+// end

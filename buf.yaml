@@ -1,0 +1,15 @@
+version: v2
+breaking:
+  use:
+    - FILE
+lint:
+  use:
+    - STANDARD
+modules:
+  - path: proto
+deps:
+  # https://github.com/bufbuild/protovalidate?tab=readme-ov-file#build-with-buf
+  - buf.build/bufbuild/protovalidate
+  #- buf.build/googleapis/googleapis
+  #- buf.build/grpc/grpc
+  #- buf.build/grpc-ecosystem/openapiv2

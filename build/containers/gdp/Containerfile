@@ -1,0 +1,56 @@
+#
+# ./build/containers/gdp/Containerfile
+#
+ARG MYPATH
+ARG COMMIT
+ARG DATE
+ARG GO_VERSION=1.24.1
+ARG VERSION
+
+ARG TARGETOS
+ARG TARGETARCH
+ARG TARGETPLATFORM
+
+#https://github.com/GoogleContainerTools/distroless?tab=readme-ov-file#examples-with-docker
+FROM --platform=${BUILDPLATFORM} golang:${GO_VERSION} AS build
+
+ARG MYPATH
+ARG COMMIT
+ARG DATE
+ARG VERSION
+
+ARG TARGETOS
+ARG TARGETARCH
+ARG TARGETPLATFORM
+
+RUN echo MYPATH:${MYPATH} COMMIT:${COMMIT} DATE:${DATE} VERSION:${VERSION} \
+    BUILDPLATFORM:${BUILDPLATFORM} TARGETPLATFORM:${TARGETPLATFORM}
+
+WORKDIR /go/src
+COPY . .
+
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build \
+    -ldflags "-X main.commit=${COMMIT} -X main.date=${DATE} -X main.version=${VERSION}" \
+    -o /go/bin/gdp \
+    ./cmd/gdp/gdp.go
+# https://github.com/docker-archive/compose-cli/blob/main/Dockerfile#L31
+
+# https://github.com/GoogleContainerTools/distroless?tab=readme-ov-file#what-images-are-available
+# https://github.com/GoogleContainerTools/distroless?tab=readme-ov-file#debug-images
+#FROM gcr.io/distroless/static-debian12:nonroot
+#FROM gcr.io/distroless/static-debian12
+FROM gcr.io/distroless/static-debian12:debug
+# docker exec -ti xtcp-xtcp2-1 sh
+COPY --from=build --chmod=544 /go/bin/gdp /
+
+# copy the proto, so xtcp can register the proto with the kafka schema registry
+COPY --from=build --chmod=444 /go/src/proto/prometheus/v1/prometheus.proto /
+COPY --from=build --chmod=444 /go/src/proto/prometheus/v1/prometheus_protolist.proto /
+COPY --from=build --chmod=444 /go/src/proto/clickhouse_protolist/v1/clickhouse_protolist.proto /
+
+# Prometheus
+EXPOSE 9088
+
+ENTRYPOINT ["/gdp"]
