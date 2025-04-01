@@ -32,12 +32,13 @@ func (g *GDP) Poller(ctx context.Context, wg *sync.WaitGroup) {
 	//wf := g.config.DestWriteFiles
 
 breakPoint:
-	for pollingLoops := uint64(1); MaxLoopsOrForEver(pollingLoops, g.config.MaxLoops); pollingLoops++ {
+	for pollingLoops := uint64(0); MaxLoopsOrForEver(pollingLoops, g.config.MaxLoops); pollingLoops++ {
 
 		g.pC.WithLabelValues("Poller", "pollingLoops", "count").Inc()
-		if g.debugLevel > 10 {
-			log.Printf("Poller pollingLoops:%d", pollingLoops)
-		}
+
+		// if g.debugLevel > 10 {
+		// 	log.Printf("Poller pollingLoops:%d PollFrequency:%s", pollingLoops, g.config.PollFrequency.AsDuration().String())
+		// }
 
 		select {
 
@@ -47,9 +48,9 @@ breakPoint:
 		case <-ticker.C:
 			g.pC.WithLabelValues("Poller", "ticker", "count").Inc()
 
-			if g.debugLevel > 10 {
-				log.Printf("Poller <-ticker.C pollingLoops:%d", pollingLoops)
-			}
+			// if g.debugLevel > 10 {
+			// 	log.Printf("Poller <-ticker.C pollingLoops:%d", pollingLoops)
+			// }
 
 			pollStartTime := time.Now()
 
@@ -58,8 +59,8 @@ breakPoint:
 			pollDuration := time.Since(pollStartTime)
 
 			if g.debugLevel > 10 {
-				log.Printf("Poller pollingLoops:%d pollDuration:%0.4fs %dms",
-					pollingLoops, pollDuration.Seconds(), pollDuration.Milliseconds())
+				log.Printf("Poller pollingLoops:%d PollFrequency:%s pollDuration:%0.4fs %dms",
+					pollingLoops, g.config.PollFrequency.AsDuration().String(), pollDuration.Seconds(), pollDuration.Milliseconds())
 			}
 
 			g.pH.WithLabelValues("Poller", "pollDuration", "count").Observe(pollDuration.Seconds())
@@ -90,50 +91,114 @@ func (g *GDP) performPoll(ctx context.Context, pollingLoops uint64) error {
 	}()
 	g.pC.WithLabelValues("performPoll", "start", "count").Inc()
 
-	if g.debugLevel > 10 {
-		log.Println("performPoll start")
-	}
+	// if g.debugLevel > 10 {
+	// 	log.Println("performPoll start")
+	// }
 
 	metrics, err := g.getCountMetrics(ctx)
 	if err != nil {
 		return err
 	}
 
+	if len(metrics) == 0 {
+		g.pC.WithLabelValues("performPoll", "noMetrics", "count").Inc()
+		if g.debugLevel > 10 {
+			log.Println("performPoll no metrics")
+		}
+		return nil
+	}
+
+	// if g.debugLevel > 10 {
+	// 	log.Printf("performPoll len(metrics):%d", len(metrics))
+	// 	for _, m := range metrics {
+	// 		log.Printf("performPoll m:%s", m)
+	// 	}
+	// }
+
+	// if pollingLoops == 10 {
+	// 	err := os.WriteFile("metrics_loop_10.txt", []byte(strings.Join(metrics, "\n")), 0644)
+	// 	if err != nil {
+	// 		g.pC.WithLabelValues("performPoll", "writeFile", "error").Inc()
+	// 		log.Printf("performPoll writeFile error: %v", err)
+	// 	}
+	// }
+
 	envelope, err := g.parseMetricLinesRegex(metrics, startTime, pollingLoops)
 	if err != nil {
 		return err
 	}
 
+	if len((*envelope).Rows) == 0 {
+		g.pC.WithLabelValues("performPoll", "noEnvelope", "count").Inc()
+		if g.debugLevel > 10 {
+			log.Println("performPoll no envelope")
+		}
+		return nil
+	}
+
+	// if g.debugLevel > 10 {
+	// 	log.Printf("performPoll len((*envelope).Rows):%d", len((*envelope).Rows))
+	// 	for _, r := range (*envelope).Rows {
+	// 		jsonBytes, err := protojson.Marshal(r)
+	// 		if err != nil {
+	// 			log.Printf("performPoll marshalEnvelope error: %v", err)
+	// 		} else {
+	// 			log.Printf("performPoll r:%s", jsonBytes)
+	// 		}
+	// 	}
+	// }
+
+	// if pollingLoops == 10 {
+	// 	jsonBytes, err := protojson.Marshal(envelope)
+	// 	if err != nil {
+	// 		log.Printf("performPoll marshalEnvelope error: %v", err)
+	// 	} else {
+	// 		err := os.WriteFile("envelope_loop_10.json", jsonBytes, 0644)
+	// 		if err != nil {
+	// 			log.Printf("performPoll writeEnvelope error: %v", err)
+	// 		}
+	// 	}
+	// }
+
 	wg := new(sync.WaitGroup)
-	i := 0
 	g.MarshalConfigs.Range(func(key, value interface{}) bool {
 		mc := value.(*gdp_config.MarshalConfig)
 		wg.Add(1)
-		go g.sendEnvelopeWithMarshalConfig(ctx, wg, mc, envelope, i)
+		//go g.sendEnvelopeWithMarshalConfig(ctx, wg, pollingLoops, mc, envelope)
+		g.sendEnvelopeWithMarshalConfig(ctx, wg, pollingLoops, mc, envelope)
 		//time.Sleep(1 * time.Second)
 		if g.debugLevel > 10 {
-			log.Printf("performPoll i:%d, mc:%v", i, mc)
+			log.Printf("performPoll, mc:%v", mc)
 		}
 		return true
 	})
 
 	wg.Wait()
 
-	if g.debugLevel > 10 {
-		log.Println("performPoll wg.Wait()")
-	}
+	// if g.debugLevel > 10 {
+	// 	log.Println("performPoll wg.Wait() complete")
+	// }
 
 	// Reset prom records and envelope, and return to the sync.Pools
 	for _, pc := range envelope.Rows {
 		pc.Reset()
 		g.GDPRecordPool.Put(pc)
 	}
+	// g.pC.WithLabelValues("GDPRecordPool", "Put", "count").Add(float64(len(envelope.Rows)))
 	envelope.Reset()
 	g.GDPEnvelopePool.Put(envelope)
+	// g.pC.WithLabelValues("GDPEnvelopePool", "Put", "count").Inc()
 
-	if g.debugLevel > 10 {
-		log.Printf("performPoll complete:%0.4f ms:%d", time.Since(startTime).Seconds(), time.Since(startTime).Microseconds())
-	}
+	// if g.debugLevel > 10 {
+	// 	log.Printf("performPoll complete:%0.4f ms:%d", time.Since(startTime).Seconds(), time.Since(startTime).Microseconds())
+	// }
+
+	// // for debugging, stopping here.  please note, if you use a breakpoint, then all the go routines are stopped
+	// // so franz-go stops.  so as a hack, just sleeping
+	// if pollingLoops == 3 {
+	// 	log.Printf("performPoll sleep")
+	// 	time.Sleep(12 * time.Hour)
+	// }
 
 	return nil
 }

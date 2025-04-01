@@ -17,15 +17,15 @@ func (g *GDP) initMarshalConfigs(wg *sync.WaitGroup) {
 
 	g.MarshalConfigs = &sync.Map{}
 
-	i := 0
-
 	marshalTypes := []string{
-		//"ProtobufSingle",
-		"Protobuf",
-		"ProtobufList",
+		"ProtobufSingle",
+		//"Protobuf",
+		//"ProtobufList",
 	}
 
 	for _, marshalType := range marshalTypes {
+
+		i := 0
 
 		for k := 0; k <= 1; k++ {
 			for d := 0; d <= 1; d++ {

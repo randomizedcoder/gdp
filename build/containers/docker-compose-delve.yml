@@ -203,12 +203,12 @@ services:
   gdp:
     #hostname: t-gdp-container
     image: randomizedcoder/gdp
-    #entrypoint: /dlv
+    entrypoint: /dlv
     #command: --dest kafka:localhost:19092
-    #command: "--listen=:2345 --headless=true --log=true --log-output=debugger,debuglineerr,gdbwire,lldbout,rpc --accept-multiclient --api-version=2 exec /gdp"
+    command: "--listen=:2345 --headless=true --log=true --log-output=debugger,debuglineerr,gdbwire,lldbout,rpc --accept-multiclient --api-version=2 exec /gdp"
     #command: "--listen=:2345 --headless=true --log=true exec /gdp"
-    #security_opt:
-    #- seccomp:unconfined
+    security_opt:
+    - seccomp:unconfined
     # https://github.com/go-delve/delve/blob/master/Documentation/faq.md#-how-do-i-use-delve-with-docker
     environment:
       DEBUG_LEVEL: "111"
@@ -221,8 +221,8 @@ services:
       #GOGC: 50
       GOMAXPROCS: 4
     ports:
-      # # dlv
-      # - 2345:2345
+      # dlv
+      - 2345:2345
       # prometheus
       - 8888:8888
     #privileged: true

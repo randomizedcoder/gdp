@@ -26,14 +26,14 @@ func TestParseMetricLine(t *testing.T) {
 	g := newGDPforTests()
 
 	for i, line := range lines {
-		resultRegex, errRegex := g.parseMetricLineRegex(line)
+		resultRegex, errRegex := g.parseMetricLineRegex(uint64(i), line)
 
 		t.Logf("Line: %s", line)
 
 		if errRegex != nil {
 			t.Fatalf("Regex: Error parsing line %d: %v", i, errRegex)
 		}
-		resultString, errString := g.parseMetricLineString(line)
+		resultString, errString := g.parseMetricLineString(uint64(i), line)
 		if errString != nil {
 			t.Fatalf("String: Error parsing line %d: %v", i, errString)
 		}
@@ -60,7 +60,7 @@ func BenchmarkParseMetricLineRegex(b *testing.B) {
 	line := `xtcp_counts{function="Netlinker",type="count",variable="Timeout"} 1.6404240858e+10`
 	var results []*gdpp.Envelope_PromRecordCounter
 	for i := 0; i < b.N; i++ {
-		result, _ := g.parseMetricLineRegex(line)
+		result, _ := g.parseMetricLineRegex(uint64(i), line)
 		results = append(results, result)
 	}
 	_ = results
@@ -71,7 +71,7 @@ func BenchmarkParseMetricLineString(b *testing.B) {
 	line := `xtcp_counts{function="Netlinker",type="count",variable="Timeout"} 1.6404240858e+10`
 	var results []*gdpp.Envelope_PromRecordCounter
 	for i := 0; i < b.N; i++ {
-		result, _ := g.parseMetricLineString(line)
+		result, _ := g.parseMetricLineString(uint64(i), line)
 		results = append(results, result)
 	}
 	_ = results
@@ -81,15 +81,15 @@ func TestParseMetricLines(t *testing.T) {
 	g := newGDPforTests()
 	lines := readTestData(t)
 
-	for _, line := range lines {
+	for i, line := range lines {
 
 		t.Logf("Line: %s", line)
 
-		_, errRegex := g.parseMetricLineRegex(line)
+		_, errRegex := g.parseMetricLineRegex(uint64(i), line)
 		if errRegex != nil {
 			t.Fatalf("Regex: Error parsing line: %v", errRegex)
 		}
-		_, errString := g.parseMetricLineString(line)
+		_, errString := g.parseMetricLineString(uint64(i), line)
 		if errString != nil {
 			t.Fatalf("String: Error parsing line: %v", errString)
 		}
@@ -102,7 +102,7 @@ func BenchmarkParseMetricLinesRegex(b *testing.B) {
 	var results []*gdpp.Envelope_PromRecordCounter
 	for i := 0; i < b.N; i++ {
 		for _, line := range lines {
-			result, _ := g.parseMetricLineRegex(line)
+			result, _ := g.parseMetricLineRegex(uint64(i), line)
 			results = append(results, result)
 		}
 	}
@@ -115,7 +115,7 @@ func BenchmarkParseMetricLinesString(b *testing.B) {
 	var results []*gdpp.Envelope_PromRecordCounter
 	for i := 0; i < b.N; i++ {
 		for _, line := range lines {
-			result, _ := g.parseMetricLineString(line)
+			result, _ := g.parseMetricLineString(uint64(i), line)
 			results = append(results, result)
 		}
 	}

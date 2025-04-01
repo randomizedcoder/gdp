@@ -25,6 +25,8 @@ build_and_deploy: builddocker check_protos deploy help
 
 buildgdp_and_deploy: builddocker_gdp deploy
 
+build_and_deploy_delve: builddocker_delve check_protos deploy_delve help
+
 build_clickhouse_and_deploy: builddocker_clickhouse_debug check_protos deploy help
 
 help:
@@ -57,6 +59,14 @@ deploy:
 		--file build/containers/docker-compose.yml \
 		up -d --remove-orphans
 
+deploy_delve:
+	@echo "================================"
+	@echo "Make deploy_delve"
+	echo GDPPATH=${GDPPATH}
+	GDPPATH=${GDPPATH} \
+	docker compose \
+		--file build/containers/docker-compose-delve.yml \
+		up -d --remove-orphans
 
 down:
 	@echo "================================"
@@ -73,12 +83,28 @@ builddocker: builddocker_gdp builddocker_clickhouse_debug
 builddocker_gdp:
 	@echo "================================"
 	@echo "Make builddocker_gdp randomizedcoder/gdp:${VERSION}"
+#	  --progress=plain
 	docker build \
 		--build-arg GDPPATH=${GDPPATH} \
 		--build-arg COMMIT=${COMMIT} \
 		--build-arg DATE=${DATE} \
 		--build-arg VERSION=${VERSION} \
 		--file build/containers/gdp/Containerfile \
+		--tag randomizedcoder/gdp:${VERSION} --tag randomizedcoder/gdp:latest \
+		${GDPPATH}
+
+builddocker_delve: builddocker_gdp_delve builddocker_clickhouse_debug
+
+builddocker_gdp_delve:
+	@echo "================================"
+	@echo "Make builddocker_gdp_delve randomizedcoder/gdp:${VERSION}"
+#	  --progress=plain
+	docker build \
+		--build-arg GDPPATH=${GDPPATH} \
+		--build-arg COMMIT=${COMMIT} \
+		--build-arg DATE=${DATE} \
+		--build-arg VERSION=${VERSION} \
+		--file build/containers/gdp/Containerfile.delve \
 		--tag randomizedcoder/gdp:${VERSION} --tag randomizedcoder/gdp:latest \
 		${GDPPATH}
 
@@ -140,6 +166,9 @@ followgdp:
 
 ch:
 	docker exec -it gdp-clickhouse-1 bash
+
+prom:
+	curl --silent http://localhost:8888/metrics | grep -v "#"
 
 ch_prom:
 	curl --silent http://localhost:9363/metrics | grep -v "#" | grep -i kafka

@@ -37,12 +37,13 @@ func (w *ByteSliceWriter) Write(b []byte) (n int, err error) {
 //pc *gdpp.Envelope_PromRecordCounter
 //*gdpp.Envelope
 
-func (g *GDP) marshal(proto any, mc *gdp_config.MarshalConfig, i int) (buf *[]byte) {
+func (g *GDP) marshal(proto any, mc *gdp_config.MarshalConfig) (buf *[]byte) {
 
 	buf = g.destBytesPool.Get().(*[]byte)
+	// g.pC.WithLabelValues("destBytesPool", "Get", "count").Inc()
 
 	// if g.debugLevel > 10 {
-	// 	log.Printf("marshal i:%d, mc: %v", i, mc)
+	// 	log.Printf("marshal , mc.t: %v, h:%X", mc.MarshalType, (*buf)[:KafkaHeaderSizeCst])
 	// }
 
 	if mc.KafkaHeader {
@@ -52,30 +53,25 @@ func (g *GDP) marshal(proto any, mc *gdp_config.MarshalConfig, i int) (buf *[]by
 		(*buf)[0] = 0x00                                    // Magic byte
 		binary.BigEndian.PutUint32((*buf)[1:], mc.SchemaID) // Sc
 		(*buf)[5] = 0x00                                    // the first message
-		// if mc.MarshalType == "Protobuf" {
-		// 	(*buf)[5] = 0x01 // the second message
-		// 	if g.debugLevel > 10 {
-		// 		log.Printf("marshal Protobuf i:%d, mc: %v", i, mc)
-		// 	}
-		// } else {
-		// 	(*buf)[5] = 0x00 // the first message
-		// 	if g.debugLevel > 10 {
-		// 		log.Printf("marshal NOT Protobuf i:%d, mc: %v", i, mc)
-		// 	}
-		// }
+
 		// most of the time the actual message type will be just the first message
 		// type (which is the array [0]), which would normally be encoded as 1,0 (1
 		// for length), this special case is optimized to just 0. So in the most common
 		//  case of the first message type being used, a single 0 is encoded as
 		// the message-indexes.
 
-		if g.debugLevel > 10 {
-			log.Printf("marshal protodelim.MarshalTo() mc.SchemaID:%d mc.SchemaID hex:%x", mc.SchemaID, mc.SchemaID)
-			log.Printf("marshal header bytes: % X", (*buf)[:KafkaHeaderSizeCst])
-		}
+		// if g.debugLevel > 1000 {
+		// 	log.Printf("marshal protodelim.MarshalTo() mc.SchemaID:%d mc.SchemaID hex:%x", mc.SchemaID, mc.SchemaID)
+		// 	log.Printf("marshal header bytes: % X", (*buf)[:KafkaHeaderSizeCst])
+		// }
 	}
 
 	if mc.MarshalType == "ProtobufList" {
+
+		//(*buf)[5] = 0x00 // the first message
+		// if g.debugLevel > 10 {
+		// 	log.Printf("marshal set, mc.t: %v, h:%X", mc.MarshalType, (*buf)[:KafkaHeaderSizeCst])
+		// }
 
 		e, ok := proto.(*gdpp.Envelope)
 		if !ok {
@@ -84,16 +80,26 @@ func (g *GDP) marshal(proto any, mc *gdp_config.MarshalConfig, i int) (buf *[]by
 				log.Printf("marshal: type assertion failed: expected *gdpp.Envelope, got %T", proto)
 			}
 			g.destBytesPool.Put(buf)
+			// g.pC.WithLabelValues("destBytesPool", "Put", "count").Inc()
 			return nil
 		}
 		g.protobufListMarshal(e, mc, buf)
 
-		if g.debugLevel > 10 {
-			log.Printf("marshal ProtobufList topic:%s len(buf):%d", mc.Topic, len(*buf))
-		}
+		// if g.debugLevel > 1000 {
+		// 	log.Printf("marshal ProtobufList topic:%s len(buf):%d", mc.Topic, len(*buf))
+		// }
+
+		// if g.debugLevel > 10 {
+		// 	log.Printf("marshal end, mc.t: %v, h:%X", mc.MarshalType, (*buf)[:KafkaHeaderSizeCst])
+		// }
 
 		return buf
 	}
+
+	//(*buf)[5] = 0x01 // the second message
+	// if g.debugLevel > 10 {
+	// 	log.Printf("marshal set, mc.t: %v, h:%X", mc.MarshalType, (*buf)[:KafkaHeaderSizeCst])
+	// }
 
 	pc, ok := proto.(*gdpp.Envelope_PromRecordCounter)
 	if !ok {
@@ -102,13 +108,18 @@ func (g *GDP) marshal(proto any, mc *gdp_config.MarshalConfig, i int) (buf *[]by
 			log.Printf("marshal: type assertion failed: expected *gdpp.Envelope_PromRecordCounter, got %T", proto)
 		}
 		g.destBytesPool.Put(buf)
+		// g.pC.WithLabelValues("destBytesPool", "Put", "count").Inc()
 		return nil
 	}
 	g.protobufMarshal(pc, mc, buf)
 
-	if g.debugLevel > 10 {
-		log.Printf("marshal protobufMarshal topic:%s len(buf):%d", mc.Topic, len(*buf))
-	}
+	// if g.debugLevel > 1000 {
+	// 	log.Printf("marshal protobufMarshal topic:%s len(buf):%d", mc.Topic, len(*buf))
+	// }
+
+	// if g.debugLevel > 10 {
+	// 	log.Printf("marshal end, mc.t: %v, h:%X", mc.MarshalType, (*buf)[:KafkaHeaderSizeCst])
+	// }
 
 	return buf
 }
@@ -141,6 +152,7 @@ func (g *GDP) protobufMarshal(pc *gdpp.Envelope_PromRecordCounter, mc *gdp_confi
 			log.Printf("protobufMarshal protodelim.MarshalTo() n:%d", n)
 		}
 	} else {
+
 		// https://pkg.go.dev/google.golang.org/protobuf/proto?tab=doc#Marshal
 		b, err := proto.Marshal(pc)
 		if err != nil {

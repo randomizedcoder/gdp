@@ -29,20 +29,10 @@ RUN echo MYPATH:${MYPATH} COMMIT:${COMMIT} DATE:${DATE} VERSION:${VERSION} \
 WORKDIR /go/src
 COPY . .
 
-# dlv instructions
-# https://golangforall.com/en/post/go-docker-delve-remote-debug.html
-
-# RUN --mount=type=cache,target=/go/pkg/mod \
-#     --mount=type=cache,target=/root/.cache/go-build \
-#     CGO_ENABLED=0 go install -ldflags "-w -extldflags '-static'" \
-#     github.com/go-delve/delve/cmd/dlv@latest
-# # https://github.com/multi-io/docker-delve/blob/master/Dockerfile
-
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 go build \
     -ldflags "-X main.commit=${COMMIT} -X main.date=${DATE} -X main.version=${VERSION}" \
-    -gcflags "all=-N -l" \
     -o /go/bin/gdp \
     ./cmd/gdp/gdp.go
 # https://github.com/docker-archive/compose-cli/blob/main/Dockerfile#L31
@@ -52,10 +42,8 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 #FROM gcr.io/distroless/static-debian12:nonroot
 #FROM gcr.io/distroless/static-debian12
 FROM gcr.io/distroless/static-debian12:debug
-#FROM scratch
-# docker exec -ti gdp-gdp-1 sh
-#COPY --from=build --chmod=544 /go/bin/dlv /dlv
-COPY --from=build --chmod=544 /go/bin/gdp /gdp
+# docker exec -ti xtcp-xtcp2-1 sh
+COPY --from=build --chmod=544 /go/bin/gdp /
 
 # copy the proto, so xtcp can register the proto with the kafka schema registry
 COPY --from=build --chmod=444 /go/src/proto/prometheus/v1/prometheus.proto /
@@ -66,6 +54,5 @@ COPY --from=build --chmod=444 /go/src/proto/clickhouse_protolist/v1/clickhouse_p
 EXPOSE 9088
 
 ENTRYPOINT ["/gdp"]
-#ENTRYPOINT ["/dlv"]
 
 # end

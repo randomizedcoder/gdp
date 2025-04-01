@@ -29,8 +29,6 @@ type GDP struct {
 	config *gdp_config.GdpConfig
 
 	MarshalConfigs *sync.Map // gdp_config.MarshalConfig
-	// mcToTopic      *sync.Map
-	// mcToSchemaId   *sync.Map
 
 	GDPEnvelopePool sync.Pool
 	GDPRecordPool   sync.Pool
@@ -39,13 +37,14 @@ type GDP struct {
 
 	hostname string
 
-	Marshallers      sync.Map
-	Marshaller       func(pc *gdpp.Envelope_PromRecordCounter) (buf *[]byte)
-	Destinations     sync.Map
-	Destination      func(ctx context.Context, binaryProto *[]byte, i int, mc *gdp_config.MarshalConfig) (n int, err error)
+	Marshallers  sync.Map
+	Marshaller   func(pc *gdpp.Envelope_PromRecordCounter) (buf *[]byte)
+	Destinations sync.Map
+	Destination  func(ctx context.Context, binaryProto *[]byte, mc *gdp_config.MarshalConfig) (n int, err error)
+
 	InitDestinations sync.Map
-	// Signals poller can start
-	DestinationReady chan struct{}
+
+	DestinationReady chan struct{} // Signals poller can start
 
 	kClient *kgo.Client
 	// kRegClient *sr.Client
