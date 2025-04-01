@@ -118,6 +118,8 @@ func main() {
 
 	flag.Parse()
 
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds | log.LUTC | log.Lshortfile | log.Lmsgprefix)
+
 	// Print version information passed in via ldflags in the Makefile
 	if *v {
 		log.Printf("gdp commit:%s\tdate(UTC):%s\tversion:%s", commit, date, version)

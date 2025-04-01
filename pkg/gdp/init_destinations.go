@@ -51,18 +51,18 @@ func (g *GDP) InitDests(ctx context.Context, wg *sync.WaitGroup) {
 		log.Fatalf("InitDests GDP Dest invalid:%s, must be one of:%s", dest, validDestinations())
 	}
 
-	g.Destinations.Store("null", func(ctx context.Context, binaryProto *[]byte, i int, mc *gdp_config.MarshalConfig) (n int, err error) {
-		return g.destNull(ctx, binaryProto, i, mc)
+	g.Destinations.Store("null", func(ctx context.Context, binaryProto *[]byte, mc *gdp_config.MarshalConfig) (n int, err error) {
+		return g.destNull(ctx, binaryProto, mc)
 	})
-	g.Destinations.Store("kafka", func(ctx context.Context, binaryProto *[]byte, i int, mc *gdp_config.MarshalConfig) (n int, err error) {
-		return g.destKafka(ctx, binaryProto, i, mc)
+	g.Destinations.Store("kafka", func(ctx context.Context, binaryProto *[]byte, mc *gdp_config.MarshalConfig) (n int, err error) {
+		return g.destKafka(ctx, binaryProto, mc)
 	})
 
 	f, ok := g.Destinations.Load(dest)
 	if !ok {
 		log.Fatalf("InitDests GDP Dest load invalid:%s, must be one of:%s", dest, validDestinations())
 	}
-	g.Destination = f.(func(ctx context.Context, GDPRecordBinary *[]byte, i int, mc *gdp_config.MarshalConfig) (n int, err error))
+	g.Destination = f.(func(ctx context.Context, GDPRecordBinary *[]byte, mc *gdp_config.MarshalConfig) (n int, err error))
 
 	// no null initilizer
 	g.InitDestinations.Store("kafka", func(ctx context.Context) {

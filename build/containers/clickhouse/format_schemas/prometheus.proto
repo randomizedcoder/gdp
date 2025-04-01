@@ -65,15 +65,17 @@ message PromRecordCounter {
 
 	string tag                                      = 60; // free form string
 
-	uint64 record_counter                           = 70;
+	uint64 poll_counter                             = 70;
 
-	string function                                 = 80; // []string{"function", "variable", "type"},
+	uint64 record_counter                           = 80;
 
-	string variable                                 = 90;
+	string function                                 = 90; // []string{"function", "variable", "type"},
 
-	string type                                     = 100;
+	string variable                                 = 100;
 
-	double value                                    = 110;
+	string type                                     = 110;
+
+	double value                                    = 120;
 
 };
 

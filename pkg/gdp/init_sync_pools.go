@@ -29,7 +29,10 @@ func (g *GDP) InitSyncPools(wg *sync.WaitGroup) {
 
 	g.kgoRecordPool = sync.Pool{
 		New: func() any {
-			return new(kgo.Record)
+			//return new(kgo.Record)
+			k := new(kgo.Record)
+			k.Value = make([]byte, 0, destBytesMaxSizeCst)
+			return k
 		},
 	}
 

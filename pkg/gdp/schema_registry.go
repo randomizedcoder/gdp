@@ -93,9 +93,11 @@ func (g *GDP) setFilename(MarshalConfigs *sync.Map) {
 		case "ProtobufSingle":
 			filename = g.config.PromProtoFile
 		case "Protobuf":
-			filename = g.config.PromListProtoFile
+			filename = g.config.PromProtoFile
 		case "ProtobufList":
 			filename = g.config.PromListProtoFile
+		default:
+			log.Fatal("setFilename unknown mc.MarshalType")
 		}
 		mc.Filename = filename
 		if g.debugLevel > 10 {

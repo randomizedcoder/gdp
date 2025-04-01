@@ -123,11 +123,12 @@ type Envelope_PromRecordCounter struct {
 	Pop           string                 `protobuf:"bytes,30,opt,name=pop,proto3" json:"pop,omitempty"`
 	Label         string                 `protobuf:"bytes,50,opt,name=label,proto3" json:"label,omitempty"` // free form string
 	Tag           string                 `protobuf:"bytes,60,opt,name=tag,proto3" json:"tag,omitempty"`     // free form string
-	RecordCounter uint64                 `protobuf:"varint,70,opt,name=record_counter,json=recordCounter,proto3" json:"record_counter,omitempty"`
-	Function      string                 `protobuf:"bytes,80,opt,name=function,proto3" json:"function,omitempty"` // []string{"function", "variable", "type"},
-	Variable      string                 `protobuf:"bytes,90,opt,name=variable,proto3" json:"variable,omitempty"`
-	Type          string                 `protobuf:"bytes,100,opt,name=type,proto3" json:"type,omitempty"`
-	Value         float64                `protobuf:"fixed64,110,opt,name=value,proto3" json:"value,omitempty"`
+	PollCounter   uint64                 `protobuf:"varint,70,opt,name=poll_counter,json=pollCounter,proto3" json:"poll_counter,omitempty"`
+	RecordCounter uint64                 `protobuf:"varint,80,opt,name=record_counter,json=recordCounter,proto3" json:"record_counter,omitempty"`
+	Function      string                 `protobuf:"bytes,90,opt,name=function,proto3" json:"function,omitempty"` // []string{"function", "variable", "type"},
+	Variable      string                 `protobuf:"bytes,100,opt,name=variable,proto3" json:"variable,omitempty"`
+	Type          string                 `protobuf:"bytes,110,opt,name=type,proto3" json:"type,omitempty"`
+	Value         float64                `protobuf:"fixed64,120,opt,name=value,proto3" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -197,6 +198,13 @@ func (x *Envelope_PromRecordCounter) GetTag() string {
 	return ""
 }
 
+func (x *Envelope_PromRecordCounter) GetPollCounter() uint64 {
+	if x != nil {
+		return x.PollCounter
+	}
+	return 0
+}
+
 func (x *Envelope_PromRecordCounter) GetRecordCounter() uint64 {
 	if x != nil {
 		return x.RecordCounter
@@ -236,21 +244,22 @@ var File_prometheus_v1_prometheus_protolist_proto protoreflect.FileDescriptor
 
 const file_prometheus_v1_prometheus_protolist_proto_rawDesc = "" +
 	"\n" +
-	"(prometheus/v1/prometheus_protolist.proto\x12\rprometheus.v1\"\xe1\x02\n" +
+	"(prometheus/v1/prometheus_protolist.proto\x12\rprometheus.v1\"\x84\x03\n" +
 	"\bEnvelope\x12=\n" +
-	"\x04rows\x18\x01 \x03(\v2).prometheus.v1.Envelope.PromRecordCounterR\x04rows\x1a\x95\x02\n" +
+	"\x04rows\x18\x01 \x03(\v2).prometheus.v1.Envelope.PromRecordCounterR\x04rows\x1a\xb8\x02\n" +
 	"\x11PromRecordCounter\x12!\n" +
 	"\ftimestamp_ns\x18\n" +
 	" \x01(\x01R\vtimestampNs\x12\x1a\n" +
 	"\bhostname\x18\x14 \x01(\tR\bhostname\x12\x10\n" +
 	"\x03pop\x18\x1e \x01(\tR\x03pop\x12\x14\n" +
 	"\x05label\x182 \x01(\tR\x05label\x12\x10\n" +
-	"\x03tag\x18< \x01(\tR\x03tag\x12%\n" +
-	"\x0erecord_counter\x18F \x01(\x04R\rrecordCounter\x12\x1a\n" +
-	"\bfunction\x18P \x01(\tR\bfunction\x12\x1a\n" +
-	"\bvariable\x18Z \x01(\tR\bvariable\x12\x12\n" +
-	"\x04type\x18d \x01(\tR\x04type\x12\x14\n" +
-	"\x05value\x18n \x01(\x01R\x05valueB\x94\x01\n" +
+	"\x03tag\x18< \x01(\tR\x03tag\x12!\n" +
+	"\fpoll_counter\x18F \x01(\x04R\vpollCounter\x12%\n" +
+	"\x0erecord_counter\x18P \x01(\x04R\rrecordCounter\x12\x1a\n" +
+	"\bfunction\x18Z \x01(\tR\bfunction\x12\x1a\n" +
+	"\bvariable\x18d \x01(\tR\bvariable\x12\x12\n" +
+	"\x04type\x18n \x01(\tR\x04type\x12\x14\n" +
+	"\x05value\x18x \x01(\x01R\x05valueB\x94\x01\n" +
 	"\x11com.prometheus.v1B\x18PrometheusProtolistProtoP\x01Z\x10./pkg/prometheus\xa2\x02\x03PXX\xaa\x02\rPrometheus.V1\xca\x02\rPrometheus\\V1\xe2\x02\x19Prometheus\\V1\\GPBMetadata\xea\x02\x0ePrometheus::V1b\x06proto3"
 
 var (

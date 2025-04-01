@@ -21,10 +21,11 @@ var (
 func (g *GDP) parseMetricLinesRegex(lines []string, t time.Time, pollingLoops uint64) (*gdpp.Envelope, error) {
 
 	e := g.GDPEnvelopePool.Get().(*gdpp.Envelope)
+	// g.pC.WithLabelValues("GDPEnvelopePool", "Get", "count").Inc()
 
-	for _, line := range lines {
+	for i, line := range lines {
 
-		pc, err := g.parseMetricLineRegex(line)
+		pc, err := g.parseMetricLineRegex(uint64(i), line)
 		if err != nil {
 			return e, err
 		}
@@ -33,7 +34,7 @@ func (g *GDP) parseMetricLinesRegex(lines []string, t time.Time, pollingLoops ui
 		pc.Hostname = g.hostname
 		pc.Label = g.config.Label
 		pc.Tag = g.config.Tag
-		pc.RecordCounter = pollingLoops
+		pc.PollCounter = pollingLoops
 
 		e.Rows = append(e.Rows, pc)
 	}
@@ -45,13 +46,14 @@ func (g *GDP) parseMetricLinesRegex(lines []string, t time.Time, pollingLoops ui
 // xtcp_counts{function="Poller",type="bytes",variable="Destination"} 16687
 
 // parseMetricLineRegex parses a Prometheus metric line using regular expressions.
-func (g *GDP) parseMetricLineRegex(line string) (*gdpp.Envelope_PromRecordCounter, error) {
+func (g *GDP) parseMetricLineRegex(i uint64, line string) (*gdpp.Envelope_PromRecordCounter, error) {
 
 	// if g.debugLevel > 10 {
 	// 	log.Printf("parseMetricLineRegex:%v", line)
 	// }
 
 	pc := g.GDPRecordPool.Get().(*gdpp.Envelope_PromRecordCounter)
+	// g.pC.WithLabelValues("GDPRecordPool", "Get", "count").Inc()
 
 	matches := re.FindStringSubmatch(line)
 
@@ -70,10 +72,18 @@ func (g *GDP) parseMetricLineRegex(line string) (*gdpp.Envelope_PromRecordCounte
 		return pc, fmt.Errorf("invalid float value: %w", err)
 	}
 
+	pc.RecordCounter = i
 	pc.Function = matches[1]
 	pc.Type = matches[2]
 	pc.Variable = matches[3]
 	pc.Value = value
+
+	// if g.debugLevel > 10 {
+	// 	log.Printf("pc.Function:%v", pc.Function)
+	// 	log.Printf("pc.Type:%v", pc.Type)
+	// 	log.Printf("pc.Variable:%v", pc.Variable)
+	// 	log.Printf("pc.Value:%v", pc.Value)
+	// }
 
 	return pc, nil
 }
@@ -99,13 +109,14 @@ func (g *GDP) parseMetricLineRegex(line string) (*gdpp.Envelope_PromRecordCounte
 // xtcp_counts{function="Poller",type="bytes",variable="Destination"} 16687
 
 // parseMetricLineString parses a Prometheus metric line using string manipulation.
-func (g *GDP) parseMetricLineString(line string) (*gdpp.Envelope_PromRecordCounter, error) {
+func (g *GDP) parseMetricLineString(i uint64, line string) (*gdpp.Envelope_PromRecordCounter, error) {
 
 	// if g.debugLevel > 10 {
 	// 	log.Printf("parseMetricLineString:%v", line)
 	// }
 
 	pc := g.GDPRecordPool.Get().(*gdpp.Envelope_PromRecordCounter)
+	// g.pC.WithLabelValues("GDPRecordPool", "Get", "count").Inc()
 
 	var captures [4]string
 	captureIndex := 0
@@ -146,6 +157,7 @@ func (g *GDP) parseMetricLineString(line string) (*gdpp.Envelope_PromRecordCount
 		return pc, fmt.Errorf("invalid float value: %w", err)
 	}
 
+	pc.RecordCounter = i
 	pc.Function = captures[0]
 	pc.Type = captures[1]
 	pc.Variable = captures[2]

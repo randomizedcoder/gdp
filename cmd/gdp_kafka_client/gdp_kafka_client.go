@@ -34,13 +34,16 @@ var (
 
 func main() {
 
-	debugLevelPtr := flag.Uint("d", debugLevelCst, "debug level")
+	d := flag.Uint("d", debugLevelCst, "debug level")
 	topic := flag.String("topic", topicCst, "topic")
+	group := flag.String("group", groupIDCst, "consumer group")
 	pb := flag.String("pb", pbCst, "protobuf type, row/envelope")
 
 	flag.Parse()
 
-	debugLevel = *debugLevelPtr
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds | log.LUTC | log.Lshortfile | log.Lmsgprefix)
+
+	debugLevel = *d
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -57,7 +60,7 @@ func main() {
 
 	opts := []kgo.Opt{
 		kgo.SeedBrokers(brokerCst),
-		kgo.ConsumerGroup(groupIDCst),
+		kgo.ConsumerGroup(*group),
 		kgo.ConsumeTopics(*topic),
 		kgo.ClientID(clientIDCst),
 		//kgo.RecordDeserializer(serde.RecordDeserializer()),
@@ -75,7 +78,7 @@ func main() {
 
 	for i := 0; ; i++ {
 
-		if debugLevel > 10 {
+		if debugLevel > 1000 {
 			log.Printf("i:%d, PollFetches", i)
 		}
 
@@ -87,6 +90,13 @@ func main() {
 
 		fetches.EachRecord(func(record *kgo.Record) {
 
+			if len(record.Value) < KafkaHeaderSizeCst {
+				if debugLevel > 10 {
+					log.Printf("len(record.Value): %d is too short", len(record.Value))
+				}
+				return
+			}
+
 			if debugLevel > 10 {
 				log.Printf("record.Value header: % X", record.Value[:KafkaHeaderSizeCst])
 			}
@@ -94,18 +104,13 @@ func main() {
 			// 	log.Printf("record.Value:% X", record.Value)
 			// }
 
-			if len(record.Value) < 6 {
-				log.Println("Skipping record: Value too short to contain Confluent header")
-				return
-			}
-
 			schemaID := binary.BigEndian.Uint32(record.Value[1:5])
 			protobufSchemaIndex := record.Value[5]
 			if debugLevel > 10 {
 				log.Printf("len(record.Value):%d, schemaID:%d, protobufSchemaIndex: %d", len(record.Value), schemaID, protobufSchemaIndex)
 			}
 
-			printPayload(record.Value[6:], *pb)
+			printPayload(record.Value[KafkaHeaderSizeCst:], *pb)
 
 		})
 	}
