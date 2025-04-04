@@ -1,12 +1,12 @@
 --
--- Recreate xtcp_kafka_debug.sql
+-- Recreate gdp_kafka_debug.sql
 --
 
 SELECT * FROM system.kafka_consumers FORMAT Vertical;
 SELECT now();
 
 -- SELECT * FROM system.stack_trace LIMIT 10;
--- docker exec -ti xtcp-clickhouse-1 clickhouse-client --query "SELECT * FROM system.stack_trace ORDER BY 'thread_id' DESC LIMIT 10;"
+-- docker exec -ti gdp-clickhouse-1 clickhouse-client --query "SELECT * FROM system.stack_trace ORDER BY 'thread_id' DESC LIMIT 10;"
 
 -- 155ecab95bba :) SELECT * FROM system.kafka_consumers FORMAT Vertical;
 
@@ -18,8 +18,8 @@ SELECT now();
 
 -- Row 1:
 -- ──────
--- database:                   xtcp
--- table:                      xtcp_flat_records_kafka
+-- database:                   gdp
+-- table:                      gdp_flat_records_kafka
 -- consumer_id:
 -- assignments.topic:          []
 -- assignments.partition_id:   []
@@ -55,4 +55,4 @@ SELECT now();
 --   stable_timestamp(last_poll_time) as last_poll_time_, num_messages_read, stable_timestamp(last_commit_time) as last_commit_time_,
 --   num_commits, stable_timestamp(last_rebalance_time) as last_rebalance_time_,
 --   num_rebalance_revocations, num_rebalance_assignments, is_currently_used
---   FROM system.kafka_consumers WHERE database='xtcp' and table='xtcp_flat_records_kafka' format Vertical;
+--   FROM system.kafka_consumers WHERE database='gdp' and table='gdp_flat_records_kafka' format Vertical;

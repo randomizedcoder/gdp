@@ -1,5 +1,5 @@
 --
--- count_xtcp_flat_records.sql
+-- count_gdp_flat_records.sql
 --
 
-SELECT count(*) FROM xtcp.xtcp_flat_records;
+SELECT count(*) FROM gdp.gdp_flat_records;

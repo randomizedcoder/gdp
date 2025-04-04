@@ -42,7 +42,6 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 go build \
     -ldflags "-X main.commit=${COMMIT} -X main.date=${DATE} -X main.version=${VERSION}" \
-    -gcflags "all=-N -l" \
     -o /go/bin/gdp \
     ./cmd/gdp/gdp.go
 # https://github.com/docker-archive/compose-cli/blob/main/Dockerfile#L31

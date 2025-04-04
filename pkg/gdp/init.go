@@ -27,7 +27,7 @@ func (g *GDP) Init(ctx context.Context) {
 	wg := new(sync.WaitGroup)
 
 	wg.Add(1)
-	go g.initMarshalConfigs(wg)
+	go g.InitMarshalConfigs(wg)
 
 	// wg.Add(1)
 	// go g.InitMarshallers(wg)

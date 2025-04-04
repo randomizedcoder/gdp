@@ -87,6 +87,34 @@ message Envelope {
 	repeated PromRecordCounter rows  = 1;
 };
 
+// repeated per the test 02240
+// https://github.com/ClickHouse/ClickHouse/blob/master/tests/queries/0_stateless/format_schemas/02240_protobuflist_format_persons_syntax2.proto#L67
+message PromRecordCounter {
+
+	double timestamp_ns                             = 10;
+
+	string hostname                                 = 20;
+
+	string pop                                      = 30;
+
+	string label                                    = 50; // free form string
+
+	string tag                                      = 60; // free form string
+
+	uint64 poll_counter                             = 70;
+
+	uint64 record_counter                           = 80;
+
+	string function                                 = 90; // []string{"function", "variable", "type"},
+
+	string variable                                 = 100;
+
+	string type                                     = 110;
+
+	double value                                    = 120;
+
+};
+
 // Build this using buf build ( https://buf.build/ ), see the buf config in the root folder
 
 // Little reminder on compiling

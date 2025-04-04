@@ -223,21 +223,21 @@ message MarshalConfig {
 	];
 
 	uint32 schema_i_d                                  = 40 [
-		(buf.validate.field).required = true,
+		(buf.validate.field).required = false,
 		(buf.validate.field).uint32 = {
 			gte: 0,
 			lte: 10000
 	}];
 
 	string filename                                   = 50 [
-		(buf.validate.field).required = true,
+		(buf.validate.field).required = false,
 		(buf.validate.field).string = {
 			min_len: 1,
 			max_len: 80,
 	}];
 
 	string topic                                      = 60 [
-		(buf.validate.field).required = true,
+		(buf.validate.field).required = false,
 		(buf.validate.field).string = {
 			min_len: 1,
 			max_len: 80,

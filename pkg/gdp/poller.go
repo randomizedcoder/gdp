@@ -28,16 +28,16 @@ func (g *GDP) Poller(ctx context.Context, wg *sync.WaitGroup) {
 		log.Printf("Poller DestinationReady")
 	}
 
-	ticker := time.NewTicker(g.config.PollFrequency.AsDuration())
-	//wf := g.config.DestWriteFiles
+	ticker := time.NewTicker(g.Config.PollFrequency.AsDuration())
+	//wf := g.Config.DestWriteFiles
 
 breakPoint:
-	for pollingLoops := uint64(0); MaxLoopsOrForEver(pollingLoops, g.config.MaxLoops); pollingLoops++ {
+	for pollingLoops := uint64(0); MaxLoopsOrForEver(pollingLoops, g.Config.MaxLoops); pollingLoops++ {
 
 		g.pC.WithLabelValues("Poller", "pollingLoops", "count").Inc()
 
 		// if g.debugLevel > 10 {
-		// 	log.Printf("Poller pollingLoops:%d PollFrequency:%s", pollingLoops, g.config.PollFrequency.AsDuration().String())
+		// 	log.Printf("Poller pollingLoops:%d PollFrequency:%s", pollingLoops, g.Config.PollFrequency.AsDuration().String())
 		// }
 
 		select {
@@ -60,7 +60,7 @@ breakPoint:
 
 			if g.debugLevel > 10 {
 				log.Printf("Poller pollingLoops:%d PollFrequency:%s pollDuration:%0.4fs %dms",
-					pollingLoops, g.config.PollFrequency.AsDuration().String(), pollDuration.Seconds(), pollDuration.Milliseconds())
+					pollingLoops, g.Config.PollFrequency.AsDuration().String(), pollDuration.Seconds(), pollDuration.Milliseconds())
 			}
 
 			g.pH.WithLabelValues("Poller", "pollDuration", "count").Observe(pollDuration.Seconds())
@@ -164,9 +164,9 @@ func (g *GDP) performPoll(ctx context.Context, pollingLoops uint64) error {
 	g.MarshalConfigs.Range(func(key, value interface{}) bool {
 		mc := value.(*gdp_config.MarshalConfig)
 		wg.Add(1)
-		//go g.sendEnvelopeWithMarshalConfig(ctx, wg, pollingLoops, mc, envelope)
-		g.sendEnvelopeWithMarshalConfig(ctx, wg, pollingLoops, mc, envelope)
-		//time.Sleep(1 * time.Second)
+		go g.sendEnvelopeWithMarshalConfig(ctx, wg, pollingLoops, mc, envelope)
+		//g.sendEnvelopeWithMarshalConfig(ctx, wg, pollingLoops, mc, envelope)
+
 		if g.debugLevel > 10 {
 			log.Printf("performPoll, mc:%v", mc)
 		}
@@ -213,9 +213,9 @@ func (g *GDP) getCountMetrics(ctx context.Context) ([]string, error) {
 
 	metrics, err := g.fetchPrometheusMetrics(
 		ctx,
-		g.config.RequestConfig.MetricsUrl,
-		g.config.RequestConfig.RequestBackoff.AsDuration(),
-		g.config.RequestConfig.MaxRetries)
+		g.Config.RequestConfig.MetricsUrl,
+		g.Config.RequestConfig.RequestBackoff.AsDuration(),
+		g.Config.RequestConfig.MaxRetries)
 
 	if err != nil {
 		if g.debugLevel > 10 {
@@ -224,7 +224,7 @@ func (g *GDP) getCountMetrics(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 
-	counts := g.filterCounts(metrics, g.config.RequestConfig.AllowPrefix)
+	counts := g.filterCounts(metrics, g.Config.RequestConfig.AllowPrefix)
 
 	return counts, nil
 }

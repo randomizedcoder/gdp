@@ -48,7 +48,7 @@ func (g *GDP) marshal(proto any, mc *gdp_config.MarshalConfig) (buf *[]byte) {
 
 	if mc.KafkaHeader {
 		// Add the Confluent header for protobuf, which is length 6
-		// https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/indeg.html#wire-format
+		// https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#wire-format
 		*buf = (*buf)[:KafkaHeaderSizeCst]
 		(*buf)[0] = 0x00                                    // Magic byte
 		binary.BigEndian.PutUint32((*buf)[1:], mc.SchemaID) // Sc
