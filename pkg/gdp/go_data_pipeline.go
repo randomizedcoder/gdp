@@ -26,7 +26,7 @@ type GDP struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	config *gdp_config.GdpConfig
+	Config *gdp_config.GdpConfig
 
 	MarshalConfigs *sync.Map // gdp_config.MarshalConfig
 
@@ -65,8 +65,8 @@ func NewGDP(ctx context.Context, cancel context.CancelFunc, config *gdp_config.G
 	g.ctx = ctx
 	g.cancel = cancel
 
-	g.config = config
-	g.debugLevel = g.config.DebugLevel
+	g.Config = config
+	g.debugLevel = g.Config.DebugLevel
 
 	g.Init(ctx)
 
@@ -136,7 +136,7 @@ func (g *GDP) Run(ctx context.Context, wg *sync.WaitGroup, runPoller bool) {
 }
 
 func (g *GDP) closeDestination() {
-	switch g.config.Dest {
+	switch g.Config.Dest {
 	case "kafka":
 		g.kClient.Close()
 		// case "udp":

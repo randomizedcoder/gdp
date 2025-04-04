@@ -19,8 +19,13 @@
         <!-- default 3000 -->
         <statistics_interval_ms>3000</statistics_interval_ms>
         <!-- none, gzip, snappy, lz4, zstd -->
-         <!-- none, gzip, snappy, lz4, zstd -->
+        <!-- Kafka clinet should negotiate compression itself -->
         <!-- <compression_type>zstd</compression_type> -->
-        <!-- <compression_type>zstd</compression_type> -->
+        <!-- 2025.04.04 17:44:05.710006 [ 1395 ] {} <Warning> StorageKafka (ProtobufListKafkaProtodelim_kafka):
+        [client.id:ClickHouse-7ac8746ab007-gdp-ProtobufListKafkaProtodelim_kafka] [rdk:CONFWARN] [thrd:app]:
+        Configuration property compression.codec is a producer property and will be ignored by this consumer instance
+        -->
+        <!-- Increase max.poll.interval.ms to 10 minutes (600000 milliseconds) default is 5 minutes -->
+        <max_poll_interval_ms>600000</max_poll_interval_ms>
     </kafka>
 </clickhouse>

@@ -2,7 +2,7 @@
 # apparently /usr/bin/bash doesn't exist in the container
 
 #
-# This is the clickhouse database table creation script for xtcp2
+# This is the clickhouse database table creation script for gdp
 #
 
 set -e;
@@ -17,7 +17,7 @@ CLICKHOUSE_CLIENT="clickhouse-client";
 
 DIR="/docker-entrypoint-initdb.d/";
 
-SQL_FILE="${DIR}sql/show_tables_from_xtcp.sql";
+SQL_FILE="${DIR}sql/show_tables_from_gdp.sql";
 
 OUT_FILE="${DIR}out/show_tables";
 

@@ -2,15 +2,11 @@ package gdp
 
 import (
 	"context"
-	"fmt"
-	"log"
-	"os"
 	"sync"
 	"time"
 
 	"github.com/randomizedcoder/gdp/pkg/gdp_config"
 	"github.com/randomizedcoder/gdp/pkg/prometheus"
-	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func (g *GDP) sendEnvelopeWithMarshalConfig(
@@ -38,24 +34,24 @@ func (g *GDP) sendEnvelopeWithMarshalConfig(
 		if b == nil {
 			return nil
 		}
-		if pollingLoops == 10 {
-			filename := "envelope_binary_loop_10.bin"
-			err := os.WriteFile(filename, *b, 0644)
-			if err != nil {
-				log.Printf("sendEnvelopeWithMarshalConfig writeBinaryEnvelope error: %v", err)
-			} else {
-				log.Printf("sendEnvelopeWithMarshalConfig writeBinaryEnvelope complete: %s", filename)
-			}
-			jsonBytes, err := protojson.Marshal(envelope)
-			if err != nil {
-				log.Printf("performPoll marshalEnvelope error: %v", err)
-			} else {
-				err := os.WriteFile("xenvelope_loop_10.json", jsonBytes, 0644)
-				if err != nil {
-					log.Printf("performPoll writeEnvelope error: %v", err)
-				}
-			}
-		}
+		// if pollingLoops == 10 {
+		// 	filename := "envelope_binary_loop_10.bin"
+		// 	err := os.WriteFile(filename, *b, 0644)
+		// 	if err != nil {
+		// 		log.Printf("sendEnvelopeWithMarshalConfig writeBinaryEnvelope error: %v", err)
+		// 	} else {
+		// 		log.Printf("sendEnvelopeWithMarshalConfig writeBinaryEnvelope complete: %s", filename)
+		// 	}
+		// 	jsonBytes, err := protojson.Marshal(envelope)
+		// 	if err != nil {
+		// 		log.Printf("performPoll marshalEnvelope error: %v", err)
+		// 	} else {
+		// 		err := os.WriteFile("xenvelope_loop_10.json", jsonBytes, 0644)
+		// 		if err != nil {
+		// 			log.Printf("performPoll writeEnvelope error: %v", err)
+		// 		}
+		// 	}
+		// }
 		_, err := g.Destination(ctx, b, mc)
 		if err != nil {
 			return err
@@ -64,30 +60,30 @@ func (g *GDP) sendEnvelopeWithMarshalConfig(
 	}
 
 	// Otherwise, protobuf, so we need to iterate
-	for i, pc := range envelope.Rows {
+	for _, pc := range envelope.Rows {
 
 		b := g.marshal(pc, mc)
 		if b == nil {
 			return nil
 		}
-		if pollingLoops == 10 {
-			filename := fmt.Sprintf("record_binary_loop_10_%d.bin", i)
-			err := os.WriteFile(filename, *b, 0644)
-			if err != nil {
-				log.Printf("sendEnvelopeWithMarshalConfig writeBinaryRecord error: %v", err)
-			} else {
-				log.Printf("sendEnvelopeWithMarshalConfig writeBinaryRecord complete: %s", filename)
-			}
-			jsonBytes, err := protojson.Marshal(envelope)
-			if err != nil {
-				log.Printf("performPoll marshalEnvelope error: %v", err)
-			} else {
-				err := os.WriteFile("xenvelope_loop_10.json", jsonBytes, 0644)
-				if err != nil {
-					log.Printf("performPoll writeEnvelope error: %v", err)
-				}
-			}
-		}
+		// if pollingLoops == 10 {
+		// 	filename := fmt.Sprintf("record_binary_loop_10_%d.bin", i)
+		// 	err := os.WriteFile(filename, *b, 0644)
+		// 	if err != nil {
+		// 		log.Printf("sendEnvelopeWithMarshalConfig writeBinaryRecord error: %v", err)
+		// 	} else {
+		// 		log.Printf("sendEnvelopeWithMarshalConfig writeBinaryRecord complete: %s", filename)
+		// 	}
+		// 	jsonBytes, err := protojson.Marshal(envelope)
+		// 	if err != nil {
+		// 		log.Printf("performPoll marshalEnvelope error: %v", err)
+		// 	} else {
+		// 		err := os.WriteFile("xenvelope_loop_10.json", jsonBytes, 0644)
+		// 		if err != nil {
+		// 			log.Printf("performPoll writeEnvelope error: %v", err)
+		// 		}
+		// 	}
+		// }
 		_, err := g.Destination(ctx, b, mc)
 		if err != nil {
 			return err

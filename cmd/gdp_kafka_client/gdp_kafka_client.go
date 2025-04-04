@@ -97,9 +97,9 @@ func main() {
 				return
 			}
 
-			if debugLevel > 10 {
-				log.Printf("record.Value header: % X", record.Value[:KafkaHeaderSizeCst])
-			}
+			// if debugLevel > 10 {
+			// 	log.Printf("record.Value header: % X", record.Value[:KafkaHeaderSizeCst])
+			// }
 			// if debugLevel > 100 {
 			// 	log.Printf("record.Value:% X", record.Value)
 			// }
@@ -107,7 +107,7 @@ func main() {
 			schemaID := binary.BigEndian.Uint32(record.Value[1:5])
 			protobufSchemaIndex := record.Value[5]
 			if debugLevel > 10 {
-				log.Printf("len(record.Value):%d, schemaID:%d, protobufSchemaIndex: %d", len(record.Value), schemaID, protobufSchemaIndex)
+				log.Printf("len(record.Value):%d, schemaID:%d, protobufSchemaIndex: %d, header:% X", len(record.Value), schemaID, protobufSchemaIndex, record.Value[:KafkaHeaderSizeCst])
 			}
 
 			printPayload(record.Value[KafkaHeaderSizeCst:], *pb)
@@ -152,16 +152,23 @@ func printEnvelopePayload(b []byte) {
 		return
 	}
 
-	for _, row := range envelope.Rows {
-		// Convert to JSON
-		jsonBytes, err := protojson.Marshal(row)
-		if err != nil {
-			log.Printf("Failed to marshal row to JSON: %v", err)
-			return
-		}
-
-		log.Printf("printPayload envelope JSON: %s", jsonBytes)
+	jsonBytes, err := protojson.Marshal(&envelope)
+	if err != nil {
+		log.Printf("Failed to marshal row to JSON: %v", err)
+		return
 	}
+	log.Printf("printPayload envelope JSON: %s", jsonBytes)
+
+	// for _, row := range envelope.Rows {
+	// 	// Convert to JSON
+	// 	jsonBytes, err := protojson.Marshal(row)
+	// 	if err != nil {
+	// 		log.Printf("Failed to marshal row to JSON: %v", err)
+	// 		return
+	// 	}
+
+	// 	log.Printf("printPayload envelope JSON: %s", jsonBytes)
+	// }
 
 }
 

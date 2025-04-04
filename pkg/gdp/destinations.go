@@ -57,10 +57,10 @@ func (g *GDP) destKafka(ctx context.Context, binaryProto *[]byte, mc *gdp_config
 		ctxP    context.Context
 		cancelP context.CancelFunc
 	)
-	if g.config.KafkaProduceTimeout.AsDuration() != 0 {
+	if g.Config.KafkaProduceTimeout.AsDuration() != 0 {
 		// I don't understand why setting a context with a timeout doesn't work,
 		// but it definitely doesn't.  It always says the context is canceled. ?!
-		ctxP, cancelP = context.WithTimeout(ctx, g.config.KafkaProduceTimeout.AsDuration())
+		ctxP, cancelP = context.WithTimeout(ctx, g.Config.KafkaProduceTimeout.AsDuration())
 		defer cancelP()
 	}
 	// https://pkg.go.dev/google.golang.org/protobuf/types/known/durationpb
@@ -192,10 +192,10 @@ func (g *GDP) printRowPayload(c string, b *[]byte) string {
 // 		ctxP    context.Context
 // 		cancelP context.CancelFunc
 // 	)
-// 	if g.config.KafkaProduceTimeout.AsDuration() != 0 {
+// 	if g.Config.KafkaProduceTimeout.AsDuration() != 0 {
 // 		// I don't understand why setting a context with a timeout doesn't work,
 // 		// but it definitely doesn't.  It always says the context is canceled. ?!
-// 		ctxP, cancelP = context.WithTimeout(ctx, g.config.KafkaProduceTimeout.AsDuration())
+// 		ctxP, cancelP = context.WithTimeout(ctx, g.Config.KafkaProduceTimeout.AsDuration())
 // 		defer cancelP()
 // 	}
 // 	// https://pkg.go.dev/google.golang.org/protobuf/types/known/durationpb

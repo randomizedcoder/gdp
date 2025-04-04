@@ -1,0 +1,1 @@
+SHOW CREATE TABLE gdp.protobuf_kafka;

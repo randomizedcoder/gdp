@@ -21,9 +21,6 @@ func (g *GDP) InitSchemaRegistry(ctx context.Context, wg *sync.WaitGroup) {
 		log.Println("InitSchemaRegistry start")
 	}
 
-	g.setTopic(g.MarshalConfigs)
-	g.setFilename(g.MarshalConfigs)
-
 	w := new(sync.WaitGroup)
 
 	i := 0
@@ -67,46 +64,6 @@ func (g *GDP) InitSchemaRegistry(ctx context.Context, wg *sync.WaitGroup) {
 
 }
 
-func (g *GDP) setTopic(MarshalConfigs *sync.Map) {
-	MarshalConfigs.Range(func(key, value interface{}) bool {
-		mc := value.(*gdp_config.MarshalConfig)
-		topic := mc.MarshalType
-		if mc.KafkaHeader {
-			topic += "Kafka"
-		}
-		if mc.Protodelim {
-			topic += "Protodelim"
-		}
-		mc.Topic = topic
-		if g.debugLevel > 10 {
-			log.Printf("setTopic mc:%v", mc)
-		}
-		return true
-	})
-}
-
-func (g *GDP) setFilename(MarshalConfigs *sync.Map) {
-	MarshalConfigs.Range(func(key, value interface{}) bool {
-		mc := value.(*gdp_config.MarshalConfig)
-		var filename string
-		switch mc.MarshalType {
-		case "ProtobufSingle":
-			filename = g.config.PromProtoFile
-		case "Protobuf":
-			filename = g.config.PromProtoFile
-		case "ProtobufList":
-			filename = g.config.PromListProtoFile
-		default:
-			log.Fatal("setFilename unknown mc.MarshalType")
-		}
-		mc.Filename = filename
-		if g.debugLevel > 10 {
-			log.Printf("setFilename mc:%v", mc)
-		}
-		return true
-	})
-}
-
 // registerProtobufSchemaRestful is a HTTP REST way to register schema,
 // rather than using the franz-go helper
 func (g *GDP) registerProtobufSchemaRestful(wg *sync.WaitGroup, mc *gdp_config.MarshalConfig, i int) (int, error) {
@@ -117,7 +74,7 @@ func (g *GDP) registerProtobufSchemaRestful(wg *sync.WaitGroup, mc *gdp_config.M
 		log.Printf("registerProtobufSchema g.mcToTopic.Store i:%d, topic:%s", i, mc.Topic)
 	}
 
-	url := fmt.Sprintf("%s/subjects/%s-value/versions", g.config.KafkaSchemaUrl, mc.Topic)
+	url := fmt.Sprintf("%s/subjects/%s-value/versions", g.Config.KafkaSchemaUrl, mc.Topic)
 	if g.debugLevel > 10 {
 		log.Printf("registerProtobufSchema url:%s\n", url)
 	}
@@ -213,7 +170,7 @@ func (g *GDP) registerProtobufSchemaRestful(wg *sync.WaitGroup, mc *gdp_config.M
 // rather than using the franz-go helpers
 func (g *GDP) getLatestSchemaID() (int, error) {
 
-	url := fmt.Sprintf("%s/subjects/%s-value/versions/latest", g.config.KafkaSchemaUrl, defaultTopicCst) // fix me
+	url := fmt.Sprintf("%s/subjects/%s-value/versions/latest", g.Config.KafkaSchemaUrl, defaultTopicCst) // fix me
 
 	if g.debugLevel > 10 {
 		log.Printf("getLatestSchemaID url:%s\n", url)
@@ -249,12 +206,12 @@ func (g *GDP) getLatestSchemaID() (int, error) {
 // func (g *GDP) registerProtobufSchema(ctx context.Context) {
 
 // 	var err error
-// 	g.kRegClient, err = sr.NewClient(sr.URLs(g.config.KafkaSchemaUrl))
+// 	g.kRegClient, err = sr.NewClient(sr.URLs(g.Config.KafkaSchemaUrl))
 // 	if err != nil {
 // 		log.Fatalf("unable to create schema registry client: %v", err)
 // 	}
 
-// 	schemaBytes, errF := os.ReadFile(g.config.PromProtoFile)
+// 	schemaBytes, errF := os.ReadFile(g.Config.PromProtoFile)
 // 	if errF != nil {
 // 		log.Fatalf("registerProtobufSchema failed to read proto file: %v", errF)
 // 	}

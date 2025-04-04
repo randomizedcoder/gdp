@@ -6,7 +6,7 @@
 #
 
 #
-# This is the clickhouse database table creation script for xtcp2
+# This is the clickhouse database table creation script for gdp
 #
 
 set -e;

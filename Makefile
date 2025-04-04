@@ -38,6 +38,8 @@ help:
 	@echo "-------"
 	@echo "assuming the gdp distroless:debug is available"
 	@echo "docker exec -ti gdp-gdp-1 sh"
+	@echo "docker exec -ti gdp-clickhouse-1 bash"
+	@echo "clickhouse: sudo apt install iputils-ping"
 	@echo "------"
 	@echo "docker exec -ti gdp-clickhouse-1 tail -n 30 -f /var/log/clickhouse-server/clickhouse-server.err.log"
 	@echo "docker exec -ti gdp-clickhouse-1 tail -n 30 -f /var/log/clickhouse-server/clickhouse-server.log"

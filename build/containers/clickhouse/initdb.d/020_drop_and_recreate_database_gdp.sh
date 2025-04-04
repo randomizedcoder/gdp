@@ -2,7 +2,7 @@
 # apparently /usr/bin/bash doesn't exist in the container
 
 #
-# This is the clickhouse database table creation script for xtcp2
+# This is the clickhouse database table creation script for gdp
 #
 
 set -e;
@@ -43,8 +43,8 @@ clickhouse-client -n <<-EOSQL
 
     --------------------------------------------------------------------------------------------------
 
-    DROP DATABASE IF EXISTS xtcp;
-    CREATE DATABASE IF NOT EXISTS xtcp;
+    DROP DATABASE IF EXISTS gdp;
+    CREATE DATABASE IF NOT EXISTS gdp;
 
 EOSQL
 

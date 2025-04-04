@@ -46,7 +46,7 @@ func (g *GDP) InitDests(ctx context.Context, wg *sync.WaitGroup) {
 
 	defer wg.Done()
 
-	dest, _, _ := strings.Cut(g.config.Dest, ":")
+	dest, _, _ := strings.Cut(g.Config.Dest, ":")
 	if _, ok := validDestinationsMap[dest]; !ok {
 		log.Fatalf("InitDests GDP Dest invalid:%s, must be one of:%s", dest, validDestinations())
 	}
@@ -89,11 +89,11 @@ func (g *GDP) InitDestKafka(ctx context.Context) {
 	// initialize the kafka client
 	// https://pkg.go.dev/github.com/twmb/franz-go/pkg/kgo#ProducerOpt
 
-	broker := strings.Replace(g.config.Dest, "kafka:", "", 1)
+	broker := strings.Replace(g.Config.Dest, "kafka:", "", 1)
 
 	if g.debugLevel > 10 {
-		log.Println("config.Dest:", g.config.Dest)
-		log.Println("config.KafkaSchemaUrl:", g.config.KafkaSchemaUrl)
+		log.Println("config.Dest:", g.Config.Dest)
+		log.Println("config.KafkaSchemaUrl:", g.Config.KafkaSchemaUrl)
 		log.Println("broker:", broker)
 		log.Println("g.schemaID:", g.schemaID)
 	}
@@ -146,7 +146,7 @@ func (g *GDP) InitDestKafka(ctx context.Context) {
 
 	}
 
-	if g.config.KafkaDebugLevel > 10 {
+	if g.Config.KafkaDebugLevel > 10 {
 		// Debugging in the kgo client
 		opts = append(opts, kgo.WithLogger(kgo.BasicLogger(os.Stderr, kgo.LogLevelDebug, func() string {
 			return time.Now().Format("[2006-01-02 15:04:05.999] ")

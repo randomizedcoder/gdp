@@ -32,8 +32,8 @@ func (g *GDP) parseMetricLinesRegex(lines []string, t time.Time, pollingLoops ui
 
 		pc.TimestampNs = float64(t.UnixNano()) / 1e9
 		pc.Hostname = g.hostname
-		pc.Label = g.config.Label
-		pc.Tag = g.config.Tag
+		pc.Label = g.Config.Label
+		pc.Tag = g.Config.Tag
 		pc.PollCounter = pollingLoops
 
 		e.Rows = append(e.Rows, pc)
