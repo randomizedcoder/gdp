@@ -5,8 +5,9 @@ DROP VIEW IF EXISTS gdp.ProtobufListProtodelim_mv;
 
 CREATE MATERIALIZED VIEW gdp.ProtobufListProtodelim_mv TO gdp.ProtobufListProtodelim
   AS SELECT *
-  FROM gdp.ProtobufListProtodelim_kafka
-  WHERE length(_error) == 0;
+  FROM gdp.ProtobufListProtodelim_kafka;
+
+--  WHERE length(_error) == 0;
 
 -- SHOW CREATE TABLE gdp.ProtobufListProtodelim_mv;
 

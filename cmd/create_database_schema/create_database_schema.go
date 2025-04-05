@@ -89,6 +89,7 @@ func main() {
 		mergeTreeSQL := generateCreateTableSQL(tableName, columnsSQL)
 		kafkaSQL := generateCreateKafkaTableSQL(mc, tableName, columnsSQL)
 		materializedViewSQL := generateCreateMaterializedViewSQL(tableName)
+		insertIntoSQL := generateInsertRows(tableName)
 
 		if debugLevel > 10 {
 			log.Println(mergeTreeSQL)
@@ -119,6 +120,13 @@ func main() {
 			log.Printf("Failed to write Materialized View SQL to file %s_mv.sql: %v", baseFilename, err)
 		} else {
 			log.Printf("Wrote Materialized View SQL to file: %s_mv.sql", baseFilename)
+		}
+
+		err = os.WriteFile(baseFilename+"_insert_into.sql", []byte(insertIntoSQL), 0644)
+		if err != nil {
+			log.Printf("Failed to write insert into SQL to file %s_insert_info.sql: %v", baseFilename, err)
+		} else {
+			log.Printf("Wrote insert into SQL to file: %s_insert_info.sql", baseFilename)
 		}
 
 		select_count_from_tables.WriteString(fmt.Sprintf("SELECT count(*) FROM %s;\n", tableName))
@@ -203,7 +211,17 @@ func generateTableColumnsSQL(protoType proto.Message) string {
 		sb.WriteString(fmt.Sprintf("  %s %s,\n", fieldName, clickhouseType))
 	}
 
-	// Remove the trailing comma and newline.
+	// the virtual columns results in error:
+	// Code: 352. DB::Exception: Block structure mismatch in
+	// (columns with identical name must have identical structure)
+	// sb.WriteString(fmt.Sprintf("  _raw_message String,\n"))
+	// sb.WriteString(fmt.Sprintf("  _topic String,\n"))
+	// sb.WriteString(fmt.Sprintf("  _key String,\n"))
+	// sb.WriteString(fmt.Sprintf("  _offset UInt64,\n"))
+	// sb.WriteString(fmt.Sprintf("  _timestamp_ms UInt64,\n"))
+	// sb.WriteString(fmt.Sprintf("  _partition UInt64,\n"))
+	// sb.WriteString(fmt.Sprintf("  _error String\n"))
+
 	sql := sb.String()
 	if debugLevel < 10 {
 		log.Println(sql)
@@ -321,8 +339,8 @@ func generateCreateMaterializedViewSQL(tableName string) string {
 
 	sb.WriteString(fmt.Sprintf("CREATE MATERIALIZED VIEW %s TO %s\n", materializedViewName, tableName))
 	sb.WriteString(fmt.Sprintf("  AS SELECT *\n"))
-	sb.WriteString(fmt.Sprintf("  FROM %s\n", kafkaTableName))
-	sb.WriteString(fmt.Sprintf("  WHERE length(_error) == 0;\n\n"))
+	sb.WriteString(fmt.Sprintf("  FROM %s;\n\n", kafkaTableName))
+	sb.WriteString(fmt.Sprintf("--  WHERE length(_error) == 0;\n\n"))
 
 	sb.WriteString(fmt.Sprintf("-- SHOW CREATE TABLE %s;\n\n", materializedViewName))
 
@@ -331,6 +349,64 @@ func generateCreateMaterializedViewSQL(tableName string) string {
 	sb.WriteString(fmt.Sprintf("-- See also:\n"))
 	sb.WriteString(fmt.Sprintf("-- https://github.com/ClickHouse/ClickHouse/blob/master/tests/integration/test_storage_kafka/test_batch_fast.py#L2679\n"))
 	sb.WriteString(fmt.Sprintf("-- https://github.com/ClickHouse/ClickHouse/blob/master/tests/integration/test_storage_kafka/test_batch_slow.py\n\n"))
+
+	sb.WriteString(fmt.Sprintf("-- end\n\n"))
+
+	return sb.String()
+}
+
+func generateInsertRows(tableName string) string {
+
+	var sb strings.Builder
+
+	sb.WriteString(fmt.Sprintf("--\n"))
+	sb.WriteString(fmt.Sprintf("-- %s_insert_rows.sql\n", tableName))
+	sb.WriteString(fmt.Sprintf("--\n"))
+
+	sb.WriteString(fmt.Sprintf("INSERT INTO %s (\n", tableName))
+	sb.WriteString(fmt.Sprintf("    TimestampNs,\n"))
+	sb.WriteString(fmt.Sprintf("    Hostname,\n"))
+	sb.WriteString(fmt.Sprintf("    Pop,\n"))
+	sb.WriteString(fmt.Sprintf("    Label,\n"))
+	sb.WriteString(fmt.Sprintf("    Tag,\n"))
+	sb.WriteString(fmt.Sprintf("    PollCounter,\n"))
+	sb.WriteString(fmt.Sprintf("    RecordCounter,\n"))
+	sb.WriteString(fmt.Sprintf("    Function,\n"))
+	sb.WriteString(fmt.Sprintf("    Variable,\n"))
+	sb.WriteString(fmt.Sprintf("    Type,\n"))
+	sb.WriteString(fmt.Sprintf("    Value\n"))
+	sb.WriteString(fmt.Sprintf(") VALUES\n"))
+	sb.WriteString(fmt.Sprintf("(\n"))
+	sb.WriteString(fmt.Sprintf("    toDateTime64('2025-04-05 10:00:00.0', 9, 'UTC'),\n"))
+	//sb.WriteString(fmt.Sprintf("    toDateTime64(now(), 9, 'UTC'),\n"))
+	sb.WriteString(fmt.Sprintf("    'host1',\n"))
+	sb.WriteString(fmt.Sprintf("    'pop1',\n"))
+	sb.WriteString(fmt.Sprintf("    'label1',\n"))
+	sb.WriteString(fmt.Sprintf("    'tag1',\n"))
+	sb.WriteString(fmt.Sprintf("    100,\n"))
+	sb.WriteString(fmt.Sprintf("    1,\n"))
+	sb.WriteString(fmt.Sprintf("    'function1',\n"))
+	sb.WriteString(fmt.Sprintf("    'variable1',\n"))
+	sb.WriteString(fmt.Sprintf("    'type1',\n"))
+	sb.WriteString(fmt.Sprintf("    123.45\n"))
+	sb.WriteString(fmt.Sprintf("),\n"))
+	sb.WriteString(fmt.Sprintf("(\n"))
+	sb.WriteString(fmt.Sprintf("    toDateTime64('2025-04-05 11:00:00.0', 9, 'UTC'),\n"))
+	//sb.WriteString(fmt.Sprintf("    toDateTime64(now(), 9, 'UTC'),\n"))
+	sb.WriteString(fmt.Sprintf("    'host2',\n"))
+	sb.WriteString(fmt.Sprintf("    'pop2',\n"))
+	sb.WriteString(fmt.Sprintf("    'label2',\n"))
+	sb.WriteString(fmt.Sprintf("    'tag2',\n"))
+	sb.WriteString(fmt.Sprintf("    200,\n"))
+	sb.WriteString(fmt.Sprintf("    2,\n"))
+	sb.WriteString(fmt.Sprintf("    'function2',\n"))
+	sb.WriteString(fmt.Sprintf("    'variable2',\n"))
+	sb.WriteString(fmt.Sprintf("    'type2',\n"))
+	sb.WriteString(fmt.Sprintf("    678.90\n"))
+	sb.WriteString(fmt.Sprintf(");\n\n"))
+
+	sb.WriteString(fmt.Sprintf("-- SELECT * FROM gdp.ProtobufListProtodelim LIMIT 10;\n"))
+	sb.WriteString(fmt.Sprintf("-- TRUNCATE TABLE gdp.ProtobufListProtodelim;\n\n"))
 
 	sb.WriteString(fmt.Sprintf("-- end\n\n"))
 

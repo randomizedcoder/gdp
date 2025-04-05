@@ -212,8 +212,8 @@ services:
     # https://github.com/go-delve/delve/blob/master/Documentation/faq.md#-how-do-i-use-delve-with-docker
     environment:
       DEBUG_LEVEL: "111"
-      POLL_FREQUENCY: "2s"
-      POLL_TIMEOUT: "1s"
+      POLL_FREQUENCY: "60s"
+      POLL_TIMEOUT: "5s"
       #
       #GOMEMLIMIT: 148MiB
       # https://tip.golang.org/doc/gc-guide#GOGC

@@ -5,8 +5,9 @@ DROP VIEW IF EXISTS gdp.ProtobufSingleKafka_mv;
 
 CREATE MATERIALIZED VIEW gdp.ProtobufSingleKafka_mv TO gdp.ProtobufSingleKafka
   AS SELECT *
-  FROM gdp.ProtobufSingleKafka_kafka
-  WHERE length(_error) == 0;
+  FROM gdp.ProtobufSingleKafka_kafka;
+
+--  WHERE length(_error) == 0;
 
 -- SHOW CREATE TABLE gdp.ProtobufSingleKafka_mv;
 

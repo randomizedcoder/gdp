@@ -30,7 +30,7 @@ func (g *GDP) parseMetricLinesRegex(lines []string, t time.Time, pollingLoops ui
 			return e, err
 		}
 
-		pc.TimestampNs = float64(t.UnixNano()) / 1e9
+		pc.TimestampNs = float64(t.UnixNano()) / 1e9 // storing seconds, with nanosecond preciscion
 		pc.Hostname = g.hostname
 		pc.Label = g.Config.Label
 		pc.Tag = g.Config.Tag
