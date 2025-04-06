@@ -32,4 +32,7 @@ envelope:
 row:
 	./gdp_kafka_client -topic ProtobufKafka -pb row
 
+envelope_delim:
+	./gdp_kafka_client -topic ProtobufListProtodelim -pb envelope -k=false -delim=true
+
 # end
