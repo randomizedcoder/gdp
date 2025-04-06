@@ -4,13 +4,13 @@
 DROP TABLE IF EXISTS gdp.ProtobufListKafka_kafka;
 
 CREATE TABLE IF NOT EXISTS gdp.ProtobufListKafka_kafka (
-  TimestampNs DateTime64(9,'UTC') CODEC(DoubleDelta, LZ4),
+  Timestamp_Ns DateTime64(9,'UTC') CODEC(DoubleDelta, LZ4),
   Hostname LowCardinality(String) CODEC(LZ4),
   Pop LowCardinality(String) CODEC(LZ4),
   Label LowCardinality(String) CODEC(LZ4),
   Tag LowCardinality(String) CODEC(LZ4),
-  PollCounter UInt64 CODEC(DoubleDelta, LZ4),
-  RecordCounter UInt64 CODEC(DoubleDelta, LZ4),
+  Poll_Counter UInt64 CODEC(DoubleDelta, LZ4),
+  Record_Counter UInt64 CODEC(DoubleDelta, LZ4),
   Function LowCardinality(String) CODEC(LZ4),
   Variable LowCardinality(String) CODEC(LZ4),
   Type LowCardinality(String) CODEC(LZ4),

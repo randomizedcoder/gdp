@@ -28,7 +28,8 @@ func (g *GDP) Poller(ctx context.Context, wg *sync.WaitGroup) {
 		log.Printf("Poller DestinationReady")
 	}
 
-	ticker := time.NewTicker(g.Config.PollFrequency.AsDuration())
+	timer := time.NewTimer(0) // fire immediately
+	defer timer.Stop()
 	//wf := g.Config.DestWriteFiles
 
 breakPoint:
@@ -45,7 +46,7 @@ breakPoint:
 		case <-ctx.Done():
 			break breakPoint
 
-		case <-ticker.C:
+		case <-timer.C:
 			g.pC.WithLabelValues("Poller", "ticker", "count").Inc()
 
 			// if g.debugLevel > 10 {
@@ -65,6 +66,7 @@ breakPoint:
 
 			g.pH.WithLabelValues("Poller", "pollDuration", "count").Observe(pollDuration.Seconds())
 
+			timer.Reset(g.Config.PollFrequency.AsDuration())
 		}
 
 	}

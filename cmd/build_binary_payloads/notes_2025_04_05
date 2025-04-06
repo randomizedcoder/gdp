@@ -1,0 +1,81 @@
+a4ed7b4fd75e :) SELECT
+  *
+FROM gdp.ProtobufSingle
+LIMIT 2
+
+SELECT *
+FROM gdp.ProtobufSingle
+LIMIT 2
+
+Query id: 546a62c5-eef3-4869-af79-a48d0a4cc8b1
+
+   ┌──────────────────Timestamp_Ns─┬─Hostname─────┬─Pop─┬─Label─┬─Tag─┬─Poll_Counter─┬─Record_Counter─┬─Function─┬─Variable─────┬─Type──┬─Value─┐
+1. │ 2025-04-05 23:59:12.841076736 │ 1d93eab32382 │     │       │     │           83 │              0 │ Poller   │ pollingLoops │ count │    84 │
+2. │ 2025-04-05 23:59:12.841076736 │ 1d93eab32382 │     │       │     │           83 │              1 │ Poller   │ ticker       │ count │    84 │
+   └───────────────────────────────┴──────────────┴─────┴───────┴─────┴──────────────┴────────────────┴──────────┴──────────────┴───────┴───────┘
+
+2 rows in set. Elapsed: 0.002 sec. Processed 1.48 thousand rows, 58.52 KB (797.85 thousand rows/s., 31.46 MB/s.)
+Peak memory usage: 23.70 KiB.
+
+a4ed7b4fd75e :) SELECT
+  *
+FROM gdp.ProtobufSingle
+LIMIT 2
+INTO OUTFILE 'gdp.ProtobufListProtodelim.bin'
+FORMAT ProtobufList
+SETTINGS format_schema = '/var/lib/clickhouse/format_schemas/prometheus_protolist.proto:PromRecordCounter'
+
+SELECT *
+FROM gdp.ProtobufSingle
+LIMIT 2
+INTO OUTFILE 'gdp.ProtobufListProtodelim.bin'
+FORMAT ProtobufList
+SETTINGS format_schema = '/var/lib/clickhouse/format_schemas/prometheus_protolist.proto:PromRecordCounter'
+
+Query id: 639701b5-5299-49ad-b8a5-024d6ef6cfb8
+
+
+2 rows in set. Elapsed: 0.002 sec. Processed 1.48 thousand rows, 58.52 KB (727.36 thousand rows/s., 28.69 MB/s.)
+Peak memory usage: 23.88 KiB.
+
+
+[das@t:~/Downloads/gdp/cmd/build_binary_payloads]$ ./build_binary_payloads -f gdp.ProtobufListProtodelim.bin_2025_04_05_1755 -r
+2025/04/06 00:55:31.007307 build_binary_payloads.go:81: Reading file: ./gdp.ProtobufListProtodelim.bin_2025_04_05_1755
+{"timestampNs":1743897552.8410769, "hostname":"1d93eab32382", "pollCounter":"83", "function":"Poller", "variable":"pollingLoops", "type":"count", "value":84}
+{"timestampNs":1743897552.8410769, "hostname":"1d93eab32382", "pollCounter":"83", "recordCounter":"1", "function":"Poller", "variable":"ticker", "type":"count", "value":84}
+
+
+clickhouse-client --query "INSERT INTO gdp.ProtobufList SETTINGS format_schema='/var/lib/clickhouse/format_schemas/prometheus_protolist.proto:PromRecordCounter' FORMAT ProtobufList" < gdp.ProtobufListProtodelim.bin
+
+root@788427f2113d:/# clickhouse-client --query "INSERT INTO gdp.ProtobufList SETTINGS format_schema='/var/lib/clickhouse/format_schemas/prometheus_protolist.proto:PromRecordCounter' FORMAT ProtobufList" < gdp.ProtobufListProtodelim.bin
+root@788427f2113d:/# clickhouse-client
+ClickHouse client version 25.3.1.2703 (official build).
+Connecting to localhost:9000 as user default.
+Connected to ClickHouse server version 25.3.1.
+
+Warnings:
+ * Delay accounting is not enabled, OSIOWaitMicroseconds will not be gathered. You can enable it using `echo 1 > /proc/sys/kernel/task_delayacct` or by using sysctl.
+
+788427f2113d :) use gdp
+
+USE gdp
+
+Query id: 278f8420-0853-486e-82b9-4efc57f74ba0
+
+Ok.
+
+0 rows in set. Elapsed: 0.002 sec.
+
+788427f2113d :) select * from ProtobufList;
+
+SELECT *
+FROM ProtobufList
+
+Query id: fa98528b-0704-4685-ad3c-57b2cb28d622
+
+   ┌──────────────────Timestamp_Ns─┬─Hostname─────┬─Pop─┬─Label─┬─Tag─┬─Poll_Counter─┬─Record_Counter─┬─Function─┬─Variable─────┬─Type──┬─Value─┐
+1. │ 2025-04-05 23:59:12.841076736 │ 1d93eab32382 │     │       │     │           83 │              0 │ Poller   │ pollingLoops │ count │    84 │
+2. │ 2025-04-05 23:59:12.841076736 │ 1d93eab32382 │     │       │     │           83 │              1 │ Poller   │ ticker       │ count │    84 │
+   └───────────────────────────────┴──────────────┴─────┴───────┴─────┴──────────────┴────────────────┴──────────┴──────────────┴───────┴───────┘
+
+2 rows in set. Elapsed: 0.002 sec.

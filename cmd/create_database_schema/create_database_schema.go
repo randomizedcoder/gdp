@@ -89,6 +89,7 @@ func main() {
 		mergeTreeSQL := generateCreateTableSQL(tableName, columnsSQL)
 		kafkaSQL := generateCreateKafkaTableSQL(mc, tableName, columnsSQL)
 		materializedViewSQL := generateCreateMaterializedViewSQL(tableName)
+		insertIntoSQL := generateInsertRows(tableName)
 
 		if debugLevel > 10 {
 			log.Println(mergeTreeSQL)
@@ -119,6 +120,13 @@ func main() {
 			log.Printf("Failed to write Materialized View SQL to file %s_mv.sql: %v", baseFilename, err)
 		} else {
 			log.Printf("Wrote Materialized View SQL to file: %s_mv.sql", baseFilename)
+		}
+
+		err = os.WriteFile(baseFilename+"_insert_into.sql", []byte(insertIntoSQL), 0644)
+		if err != nil {
+			log.Printf("Failed to write insert into SQL to file %s_insert_info.sql: %v", baseFilename, err)
+		} else {
+			log.Printf("Wrote insert into SQL to file: %s_insert_info.sql", baseFilename)
 		}
 
 		select_count_from_tables.WriteString(fmt.Sprintf("SELECT count(*) FROM %s;\n", tableName))
@@ -161,7 +169,7 @@ func initSignalHandler(cancel context.CancelFunc, complete <-chan struct{}) {
 func generateTableColumnsSQL(protoType proto.Message) string {
 
 	var fieldTypeOverrides = map[string]string{
-		"TimestampNs": "DateTime64(9,'UTC') CODEC(DoubleDelta, LZ4)",
+		"TimestampNs": "DateTime64(9,'UTC') CODEC(DoubleDelta, LZ4)", // not "Timestamp_Ns"
 	}
 
 	// tableName := fmt.Sprintf("gdp.%s", strings.ToLower(mc.Topic))
@@ -184,13 +192,16 @@ func generateTableColumnsSQL(protoType proto.Message) string {
 			continue
 		}
 
+		snakeCaseName := camelToSnake(fieldName)
+
 		var clickhouseType string
 		var ok bool
 
 		// Check if there's an override for this field name.
-		if overrideType, hasOverride := fieldTypeOverrides[fieldName]; hasOverride {
-			clickhouseType = overrideType
+		if _, hasOverride := fieldTypeOverrides[fieldName]; hasOverride {
+			//clickhouseType = overrideType
 			ok = true
+			continue //Skip timestamp
 		} else {
 			// Otherwise, use the default type mapping.
 			clickhouseType, ok = goTypeToClickHouseType(fieldType)
@@ -200,10 +211,20 @@ func generateTableColumnsSQL(protoType proto.Message) string {
 			continue
 		}
 
-		sb.WriteString(fmt.Sprintf("  %s %s,\n", fieldName, clickhouseType))
+		sb.WriteString(fmt.Sprintf("  %s %s,\n", snakeCaseName, clickhouseType))
 	}
 
-	// Remove the trailing comma and newline.
+	// the virtual columns results in error:
+	// Code: 352. DB::Exception: Block structure mismatch in
+	// (columns with identical name must have identical structure)
+	// sb.WriteString(fmt.Sprintf("  _raw_message String,\n"))
+	// sb.WriteString(fmt.Sprintf("  _topic String,\n"))
+	// sb.WriteString(fmt.Sprintf("  _key String,\n"))
+	// sb.WriteString(fmt.Sprintf("  _offset UInt64,\n"))
+	// sb.WriteString(fmt.Sprintf("  _timestamp_ms UInt64,\n"))
+	// sb.WriteString(fmt.Sprintf("  _partition UInt64,\n"))
+	// sb.WriteString(fmt.Sprintf("  _error String\n"))
+
 	sql := sb.String()
 	if debugLevel < 10 {
 		log.Println(sql)
@@ -215,35 +236,51 @@ func generateTableColumnsSQL(protoType proto.Message) string {
 	return sql
 }
 
+func camelToSnake(s string) string {
+	var result strings.Builder
+	for i, r := range s {
+		if r >= 'A' && r <= 'Z' {
+			if i > 0 {
+				result.WriteString("_")
+			}
+			result.WriteRune(r)
+		} else {
+			result.WriteRune(r)
+		}
+	}
+	return result.String()
+}
+
 func generateCreateTableSQL(tableName string, columnsSQL string) string {
 
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf("--\n"))
+	sb.WriteString("--\n")
 	sb.WriteString(fmt.Sprintf("-- %s.sql\n", tableName))
-	sb.WriteString(fmt.Sprintf("--\n"))
+	sb.WriteString("--\n")
 
 	sb.WriteString(fmt.Sprintf("DROP TABLE IF EXISTS %s;\n\n", tableName))
 
 	sb.WriteString(fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (\n", tableName))
+	sb.WriteString("  Timestamp_Ns DateTime64(9,'UTC') CODEC(DoubleDelta, LZ4),\n")
 	sb.WriteString(columnsSQL)
 	sb.WriteString(")\n")
 	sb.WriteString("ENGINE = MergeTree()\n")
-	sb.WriteString("PARTITION BY toYYYYMM(TimestampNs)\n")
-	sb.WriteString("ORDER BY (TimestampNs, Hostname, Pop, Label, Tag, PollCounter, RecordCounter)\n")
-	sb.WriteString("TTL toDateTime(TimestampNs) + INTERVAL 14 DAY;\n\n")
+	sb.WriteString("PARTITION BY toYYYYMM(Timestamp_Ns)\n")
+	sb.WriteString("ORDER BY (Timestamp_Ns, Hostname, Pop, Label, Tag, Poll_Counter, Record_Counter)\n")
+	sb.WriteString("TTL toDateTime(Timestamp_Ns) + INTERVAL 14 DAY;\n\n")
 
-	sb.WriteString(fmt.Sprintf("-- Note that ORDER BY clause implicitly specifies a primary key\n\n"))
+	sb.WriteString("-- Note that ORDER BY clause implicitly specifies a primary key\n\n")
 
 	sb.WriteString(fmt.Sprintf("-- SHOW CREATE TABLE %s;\n", tableName))
 	sb.WriteString(fmt.Sprintf("-- SELECT * FROM %s LIMIT 20;\n\n", tableName))
 
-	sb.WriteString(fmt.Sprintf("-- https://clickhouse.com/docs/guides/developer/ttl\n"))
-	sb.WriteString(fmt.Sprintf("-- https://clickhouse.com/docs/sql-reference/statements/alter/ttl\n"))
-	sb.WriteString(fmt.Sprintf("-- https://clickhouse.com/docs/engines/table-engines/mergetree-family/mergetree#table_engine-mergetree-ttl\n"))
-	sb.WriteString(fmt.Sprintf("-- https://clickhouse.com/docs/sql-reference/functions/type-conversion-functions#todatetime\n\n"))
+	sb.WriteString("-- https://clickhouse.com/docs/guides/developer/ttl\n")
+	sb.WriteString("-- https://clickhouse.com/docs/sql-reference/statements/alter/ttl\n")
+	sb.WriteString("-- https://clickhouse.com/docs/engines/table-engines/mergetree-family/mergetree#table_engine-mergetree-ttl\n")
+	sb.WriteString("-- https://clickhouse.com/docs/sql-reference/functions/type-conversion-functions#todatetime\n\n")
 
-	sb.WriteString(fmt.Sprintf("-- end\n\n"))
+	sb.WriteString("-- end\n\n")
 
 	return sb.String()
 }
@@ -270,40 +307,42 @@ func generateCreateKafkaTableSQL(mc *gdp_config.MarshalConfig, tableName string,
 	var sb strings.Builder
 	kafkaTableName := tableName + "_kafka"
 
-	sb.WriteString(fmt.Sprintf("--\n"))
+	sb.WriteString("--\n")
 	sb.WriteString(fmt.Sprintf("-- %s.sql\n", kafkaTableName))
-	sb.WriteString(fmt.Sprintf("--\n"))
+	sb.WriteString("--\n")
 
 	sb.WriteString(fmt.Sprintf("DROP TABLE IF EXISTS %s;\n\n", kafkaTableName))
 
 	sb.WriteString(fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (\n", kafkaTableName))
+	sb.WriteString("  Timestamp_Ns DateTime64(9,'UTC') CODEC(DoubleDelta, LZ4),\n") // double
+	//sb.WriteString("  Timestamp_Ns Float64 CODEC(DoubleDelta, LZ4),\n") // double
 	sb.WriteString(columnsSQL)
 	sb.WriteString(")\n")
 	sb.WriteString("ENGINE = Kafka SETTINGS\n")
-	sb.WriteString(fmt.Sprintf("  kafka_broker_list = 'redpanda-0:9092',\n"))
+	sb.WriteString("  kafka_broker_list = 'redpanda-0:9092',\n")
 	sb.WriteString(fmt.Sprintf("  kafka_topic_list = '%s',\n", mc.Topic))
 	sb.WriteString(fmt.Sprintf("  kafka_schema = '%s',\n", kafka_schema))
-	sb.WriteString(fmt.Sprintf("  kafka_max_rows_per_message = 10000,\n"))
+	sb.WriteString("  kafka_max_rows_per_message = 10000,\n")
 
-	sb.WriteString(fmt.Sprintf("  kafka_num_consumers = 1,\n"))
-	sb.WriteString(fmt.Sprintf("  kafka_thread_per_consumer = 0,\n"))
+	sb.WriteString("  kafka_num_consumers = 1,\n")
+	sb.WriteString("  kafka_thread_per_consumer = 0,\n")
 	sb.WriteString(fmt.Sprintf("  kafka_group_name = '%s',\n", mc.Topic))
-	sb.WriteString(fmt.Sprintf("  kafka_skip_broken_messages = 1,\n"))
-	sb.WriteString(fmt.Sprintf("  kafka_handle_error_mode = 'stream',\n"))
+	sb.WriteString("  kafka_skip_broken_messages = 1,\n")
+	sb.WriteString("  kafka_handle_error_mode = 'stream',\n")
 	sb.WriteString(fmt.Sprintf("  kafka_format = '%s';\n\n", mc.MarshalType))
 	// format must be last!
 	// https://github.com/ClickHouse/ClickHouse/issues/37895
 
 	sb.WriteString(fmt.Sprintf("-- SHOW CREATE TABLE %s;\n", kafkaTableName))
-	sb.WriteString(fmt.Sprintf("-- SELECT * FROM system.kafka_consumers FORMAT Vertical;\n"))
+	sb.WriteString("-- SELECT * FROM system.kafka_consumers FORMAT Vertical;\n")
 	sb.WriteString(fmt.Sprintf("-- DETACH TABLE %s;\n", kafkaTableName))
 	sb.WriteString(fmt.Sprintf("-- SELECT * FROM %s LIMIT 20;\n\n", kafkaTableName))
 
-	sb.WriteString(fmt.Sprintf("-- https://clickhouse.com/docs/integrations/kafka/kafka-table-engine\n"))
-	sb.WriteString(fmt.Sprintf("-- https://clickhouse.com/docs/engines/table-engines/integrations/kafka#creating-a-table\n"))
-	sb.WriteString(fmt.Sprintf("-- kafka_format last! = https://github.com/ClickHouse/ClickHouse/issues/37895\n\n"))
+	sb.WriteString("-- https://clickhouse.com/docs/integrations/kafka/kafka-table-engine\n")
+	sb.WriteString("-- https://clickhouse.com/docs/engines/table-engines/integrations/kafka#creating-a-table\n")
+	sb.WriteString("-- kafka_format last! = https://github.com/ClickHouse/ClickHouse/issues/37895\n\n")
 
-	sb.WriteString(fmt.Sprintf("-- end\n\n"))
+	sb.WriteString("-- end\n\n")
 
 	return sb.String()
 }
@@ -313,26 +352,100 @@ func generateCreateMaterializedViewSQL(tableName string) string {
 	materializedViewName := tableName + "_mv"
 	kafkaTableName := tableName + "_kafka"
 
-	sb.WriteString(fmt.Sprintf("--\n"))
+	sb.WriteString("--\n")
 	sb.WriteString(fmt.Sprintf("-- %s.sql\n", materializedViewName))
-	sb.WriteString(fmt.Sprintf("--\n"))
+	sb.WriteString("--\n")
 
 	sb.WriteString(fmt.Sprintf("DROP VIEW IF EXISTS %s;\n\n", materializedViewName))
 
 	sb.WriteString(fmt.Sprintf("CREATE MATERIALIZED VIEW %s TO %s\n", materializedViewName, tableName))
-	sb.WriteString(fmt.Sprintf("  AS SELECT *\n"))
-	sb.WriteString(fmt.Sprintf("  FROM %s\n", kafkaTableName))
-	sb.WriteString(fmt.Sprintf("  WHERE length(_error) == 0;\n\n"))
+	//sb.WriteString(fmt.Sprintf("  AS SELECT *\n"))
+
+	sb.WriteString("  AS SELECT\n")
+	sb.WriteString("    *,\n")
+	sb.WriteString("--    toDateTime64(Timestamp_Ns, 9, 'UTC') AS Timestamp_Ns,\n") // Conversion here
+	sb.WriteString("--    Hostname,\n")
+	sb.WriteString("--    Pop,\n")
+	sb.WriteString("--    Label,\n")
+	sb.WriteString("--    Tag,\n")
+	sb.WriteString("--    Poll_Counter,\n")
+	sb.WriteString("--    Record_Counter,\n")
+	sb.WriteString("--    Function,\n")
+	sb.WriteString("--    Variable,\n")
+	sb.WriteString("--    Type,\n")
+	sb.WriteString("--    Value,\n")
+
+	sb.WriteString(fmt.Sprintf("  FROM %s;\n\n", kafkaTableName))
+
+	//sb.WriteString(fmt.Sprintf("--  WHERE length(_error) == 0;\n\n"))
 
 	sb.WriteString(fmt.Sprintf("-- SHOW CREATE TABLE %s;\n\n", materializedViewName))
 
-	sb.WriteString(fmt.Sprintf("-- https://clickhouse.com/docs/sql-reference/statements/create/view#materialized-view\n\n"))
+	sb.WriteString("-- https://clickhouse.com/docs/sql-reference/statements/create/view#materialized-view\n\n")
 
-	sb.WriteString(fmt.Sprintf("-- See also:\n"))
-	sb.WriteString(fmt.Sprintf("-- https://github.com/ClickHouse/ClickHouse/blob/master/tests/integration/test_storage_kafka/test_batch_fast.py#L2679\n"))
-	sb.WriteString(fmt.Sprintf("-- https://github.com/ClickHouse/ClickHouse/blob/master/tests/integration/test_storage_kafka/test_batch_slow.py\n\n"))
+	sb.WriteString("-- See also:\n")
+	sb.WriteString("-- https://github.com/ClickHouse/ClickHouse/blob/master/tests/integration/test_storage_kafka/test_batch_fast.py#L2679\n")
+	sb.WriteString("-- https://github.com/ClickHouse/ClickHouse/blob/master/tests/integration/test_storage_kafka/test_batch_slow.py\n\n")
 
-	sb.WriteString(fmt.Sprintf("-- end\n\n"))
+	sb.WriteString("-- end\n\n")
+
+	return sb.String()
+}
+
+func generateInsertRows(tableName string) string {
+
+	var sb strings.Builder
+
+	sb.WriteString("--\n")
+	sb.WriteString(fmt.Sprintf("-- %s_insert_rows.sql\n", tableName))
+	sb.WriteString("--\n")
+
+	sb.WriteString(fmt.Sprintf("INSERT INTO %s (\n", tableName))
+	sb.WriteString("    Timestamp_Ns,\n")
+	sb.WriteString("    Hostname,\n")
+	sb.WriteString("    Pop,\n")
+	sb.WriteString("    Label,\n")
+	sb.WriteString("    Tag,\n")
+	sb.WriteString("    PollCounter,\n")
+	sb.WriteString("    RecordCounter,\n")
+	sb.WriteString("    Function,\n")
+	sb.WriteString("    Variable,\n")
+	sb.WriteString("    Type,\n")
+	sb.WriteString("    Value\n")
+	sb.WriteString(") VALUES\n")
+	sb.WriteString("(\n")
+	sb.WriteString("    toDateTime64('2025-04-05 10:00:00.0', 9, 'UTC'),\n")
+	//sb.WriteString(fmt.Sprintf("    toDateTime64(now(), 9, 'UTC'),\n"))
+	sb.WriteString("    'host1',\n")
+	sb.WriteString("    'pop1',\n")
+	sb.WriteString("    'label1',\n")
+	sb.WriteString("    'tag1',\n")
+	sb.WriteString("    100,\n")
+	sb.WriteString("    1,\n")
+	sb.WriteString("    'function1',\n")
+	sb.WriteString("    'variable1',\n")
+	sb.WriteString("    'type1',\n")
+	sb.WriteString("    123.45\n")
+	sb.WriteString("),\n")
+	sb.WriteString("(\n")
+	sb.WriteString("    toDateTime64('2025-04-05 11:00:00.0', 9, 'UTC'),\n")
+	//sb.WriteString(fmt.Sprintf("    toDateTime64(now(), 9, 'UTC'),\n"))
+	sb.WriteString("    'host2',\n")
+	sb.WriteString("    'pop2',\n")
+	sb.WriteString("    'label2',\n")
+	sb.WriteString("    'tag2',\n")
+	sb.WriteString("    200,\n")
+	sb.WriteString("    2,\n")
+	sb.WriteString("    'function2',\n")
+	sb.WriteString("    'variable2',\n")
+	sb.WriteString("    'type2',\n")
+	sb.WriteString("    678.90\n")
+	sb.WriteString(");\n\n")
+
+	sb.WriteString("-- SELECT * FROM gdp.ProtobufListProtodelim LIMIT 10;\n")
+	sb.WriteString("-- TRUNCATE TABLE gdp.ProtobufListProtodelim;\n\n")
+
+	sb.WriteString("-- end\n\n")
 
 	return sb.String()
 }

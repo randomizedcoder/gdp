@@ -4,9 +4,20 @@
 DROP VIEW IF EXISTS gdp.ProtobufSingle_mv;
 
 CREATE MATERIALIZED VIEW gdp.ProtobufSingle_mv TO gdp.ProtobufSingle
-  AS SELECT *
-  FROM gdp.ProtobufSingle_kafka
-  WHERE length(_error) == 0;
+  AS SELECT
+    *,
+--    toDateTime64(Timestamp_Ns, 9, 'UTC') AS Timestamp_Ns,
+--    Hostname,
+--    Pop,
+--    Label,
+--    Tag,
+--    Poll_Counter,
+--    Record_Counter,
+--    Function,
+--    Variable,
+--    Type,
+--    Value,
+  FROM gdp.ProtobufSingle_kafka;
 
 -- SHOW CREATE TABLE gdp.ProtobufSingle_mv;
 

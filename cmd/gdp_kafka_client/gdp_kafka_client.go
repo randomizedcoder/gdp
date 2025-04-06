@@ -1,9 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"context"
-	"encoding/binary"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -11,6 +12,7 @@ import (
 
 	gdpp "github.com/randomizedcoder/gdp/pkg/prometheus"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"google.golang.org/protobuf/encoding/protodelim"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
@@ -21,11 +23,13 @@ const (
 	topicCst             = "gdp"
 	groupIDCst           = "gdp-consumer-group"
 	clientIDCst          = "gdp-client"
+	pbCst                = "row" // or envelope
+	kafkaHeaderCst       = false
+	delimCst             = false
+
 	debugLevelCst        = 11
 	signalChannelSizeCst = 10
 	KafkaHeaderSizeCst   = 6
-
-	pbCst = "row" // or envelope
 )
 
 var (
@@ -38,12 +42,24 @@ func main() {
 	topic := flag.String("topic", topicCst, "topic")
 	group := flag.String("group", groupIDCst, "consumer group")
 	pb := flag.String("pb", pbCst, "protobuf type, row/envelope")
+	k := flag.Bool("k", kafkaHeaderCst, "kafka header")
+	delim := flag.Bool("delim", delimCst, "protobuf delim")
 
 	flag.Parse()
 
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds | log.LUTC | log.Lshortfile | log.Lmsgprefix)
 
 	debugLevel = *d
+
+	if debugLevel > 10 {
+		log.Printf("Parsed flags:")
+		log.Printf("  Debug Level: %d", debugLevel)
+		log.Printf("  Topic: %s", *topic)
+		log.Printf("  Consumer Group: %s", *group)
+		log.Printf("  Protobuf Type: %s", *pb)
+		log.Printf("  Kafka Header: %t", *k)
+		log.Printf("  Length-Delimited: %t", *delim)
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -77,99 +93,102 @@ func main() {
 	}
 
 	for i := 0; ; i++ {
+		processMessages(ctx, cl, *k, *delim, *pb)
+	}
+}
 
-		if debugLevel > 1000 {
-			log.Printf("i:%d, PollFetches", i)
-		}
+func processMessages(ctx context.Context, cl *kgo.Client, kafkaHeader bool, delim bool, pbType string) {
+	fetches := cl.PollFetches(ctx)
+	if errs := fetches.Errors(); len(errs) > 0 {
+		log.Printf("fetch errors: %v", errs)
+		return
+	}
 
-		fetches := cl.PollFetches(ctx)
-		if errs := fetches.Errors(); len(errs) > 0 {
-			log.Printf("fetch errors: %v", errs)
-			continue
-		}
+	fetches.EachRecord(func(record *kgo.Record) {
+		processRecord(record, kafkaHeader, delim, pbType)
+	})
+}
 
-		fetches.EachRecord(func(record *kgo.Record) {
-
-			if len(record.Value) < KafkaHeaderSizeCst {
-				if debugLevel > 10 {
-					log.Printf("len(record.Value): %d is too short", len(record.Value))
-				}
-				return
-			}
-
-			// if debugLevel > 10 {
-			// 	log.Printf("record.Value header: % X", record.Value[:KafkaHeaderSizeCst])
-			// }
-			// if debugLevel > 100 {
-			// 	log.Printf("record.Value:% X", record.Value)
-			// }
-
-			schemaID := binary.BigEndian.Uint32(record.Value[1:5])
-			protobufSchemaIndex := record.Value[5]
+func processRecord(record *kgo.Record, kafkaHeader bool, delim bool, pbType string) {
+	if kafkaHeader {
+		if len(record.Value) < KafkaHeaderSizeCst {
 			if debugLevel > 10 {
-				log.Printf("len(record.Value):%d, schemaID:%d, protobufSchemaIndex: %d, header:% X", len(record.Value), schemaID, protobufSchemaIndex, record.Value[:KafkaHeaderSizeCst])
+				log.Printf("len(record.Value): %d is too short", len(record.Value))
 			}
-
-			printPayload(record.Value[KafkaHeaderSizeCst:], *pb)
-
-		})
+			return
+		}
+		processRecordInner(record.Value[KafkaHeaderSizeCst:], pbType, delim)
+	} else if delim {
+		processRecordInner(record.Value, pbType, delim)
 	}
 }
 
-func printPayload(b []byte, t string) {
+func processRecordInner(b []byte, pbType string, delim bool) {
+	var (
+		msg interface{}
+		err error
+	)
 
-	if t == "row" {
-		printRowPayload(b)
-		return
+	if pbType == "row" {
+		msg = &gdpp.Envelope_PromRecordCounter{}
+	} else {
+		msg = &gdpp.Envelope{}
 	}
-	printEnvelopePayload(b)
 
-}
+	if debugLevel > 1000 {
+		log.Printf("processRecordInner pbType:%s, len(b):%d", pbType, len(b))
+	}
 
-func printRowPayload(b []byte) {
-	var row gdpp.Envelope_PromRecordCounter
-	err := proto.Unmarshal(b, &row)
+	reader := bytes.NewReader(b)
+	if debugLevel > 1000 {
+		log.Printf("processRecordInner reader created")
+	}
+
+	if debugLevel > 10 {
+		log.Printf("processRecordInner before UnmarshalFrom")
+	}
+
+	if delim {
+		switch msg := msg.(type) {
+		case *gdpp.Envelope_PromRecordCounter:
+			err = protodelim.UnmarshalFrom(reader, msg)
+		case *gdpp.Envelope:
+			err = protodelim.UnmarshalFrom(reader, msg)
+		default:
+			err = fmt.Errorf("unknown message type: %T", msg)
+		}
+	} else {
+		switch msg := msg.(type) {
+		case *gdpp.Envelope_PromRecordCounter:
+			err = proto.Unmarshal(b, msg)
+		case *gdpp.Envelope:
+			err = proto.Unmarshal(b, msg)
+		default:
+			err = fmt.Errorf("unknown message type: %T", msg)
+		}
+	}
+
 	if err != nil {
-		log.Printf("Failed to unmarshal row protobuf: %v", err)
+		log.Printf("Failed to unmarshal protobuf: %v", err)
 		return
 	}
-	// Convert to JSON
-	jsonBytes, err := protojson.Marshal(&row)
+
+	var jsonBytes []byte
+	switch msg := msg.(type) {
+	case *gdpp.Envelope_PromRecordCounter:
+		jsonBytes, err = protojson.Marshal(msg)
+	case *gdpp.Envelope:
+		jsonBytes, err = protojson.Marshal(msg)
+	default:
+		err = fmt.Errorf("unknown message type: %T", msg)
+	}
+
 	if err != nil {
-		log.Printf("Failed to marshal row to JSON: %v", err)
+		log.Printf("Failed to marshal to JSON: %v", err)
 		return
 	}
 
-	log.Printf("printPayload row JSON: %s", jsonBytes)
-}
-
-func printEnvelopePayload(b []byte) {
-
-	var envelope gdpp.Envelope
-	err := proto.Unmarshal(b, &envelope)
-	if err != nil {
-		log.Printf("Failed to unmarshal envelope protobuf: %v", err)
-		return
-	}
-
-	jsonBytes, err := protojson.Marshal(&envelope)
-	if err != nil {
-		log.Printf("Failed to marshal row to JSON: %v", err)
-		return
-	}
-	log.Printf("printPayload envelope JSON: %s", jsonBytes)
-
-	// for _, row := range envelope.Rows {
-	// 	// Convert to JSON
-	// 	jsonBytes, err := protojson.Marshal(row)
-	// 	if err != nil {
-	// 		log.Printf("Failed to marshal row to JSON: %v", err)
-	// 		return
-	// 	}
-
-	// 	log.Printf("printPayload envelope JSON: %s", jsonBytes)
-	// }
-
+	log.Printf("Processed message: %s", jsonBytes)
 }
 
 // initSignalHandler sets up signal handling for the process, and

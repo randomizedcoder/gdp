@@ -1565,6 +1565,8 @@
 
     <!-- Uncomment to disable ClickHouse internal DNS caching. -->
     <!-- <disable_internal_dns_cache>1</disable_internal_dns_cache> -->
+    <!-- tried to change this, but still seeing "DNSResolver: Updating DNS cache" frequently -->
+    <dns_cache_ttl>3600</dns_cache_ttl>
 
     <!-- You can also configure rocksdb like this: -->
     <!-- Full list of options:

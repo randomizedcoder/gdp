@@ -4,22 +4,22 @@
 DROP TABLE IF EXISTS gdp.ProtobufListKafkaProtodelim;
 
 CREATE TABLE IF NOT EXISTS gdp.ProtobufListKafkaProtodelim (
-  TimestampNs DateTime64(9,'UTC') CODEC(DoubleDelta, LZ4),
+  Timestamp_Ns DateTime64(9,'UTC') CODEC(DoubleDelta, LZ4),
   Hostname LowCardinality(String) CODEC(LZ4),
   Pop LowCardinality(String) CODEC(LZ4),
   Label LowCardinality(String) CODEC(LZ4),
   Tag LowCardinality(String) CODEC(LZ4),
-  PollCounter UInt64 CODEC(DoubleDelta, LZ4),
-  RecordCounter UInt64 CODEC(DoubleDelta, LZ4),
+  Poll_Counter UInt64 CODEC(DoubleDelta, LZ4),
+  Record_Counter UInt64 CODEC(DoubleDelta, LZ4),
   Function LowCardinality(String) CODEC(LZ4),
   Variable LowCardinality(String) CODEC(LZ4),
   Type LowCardinality(String) CODEC(LZ4),
   Value Float64,
 )
 ENGINE = MergeTree()
-PARTITION BY toYYYYMM(TimestampNs)
-ORDER BY (TimestampNs, Hostname, Pop, Label, Tag, PollCounter, RecordCounter)
-TTL toDateTime(TimestampNs) + INTERVAL 14 DAY;
+PARTITION BY toYYYYMM(Timestamp_Ns)
+ORDER BY (Timestamp_Ns, Hostname, Pop, Label, Tag, Poll_Counter, Record_Counter)
+TTL toDateTime(Timestamp_Ns) + INTERVAL 14 DAY;
 
 -- Note that ORDER BY clause implicitly specifies a primary key
 

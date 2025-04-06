@@ -1,5 +1,5 @@
 #
-# /cmd/gdp_kafka_client/Makefile
+# /cmd/build_binary_payloads/Makefile
 #
 
 # ldflags variables to update --version
@@ -10,7 +10,7 @@ VERSION_FILE := $(shell cat ../../VERSION)
 LOCAL_MAJOR_VERSION := $(word 1,$(subst ., ,$(VERSION_FILE)))
 LOCAL_MINOR_VERSION := $(word 2,$(subst ., ,$(VERSION_FILE)))
 LOCAL_PATCH_VERSION := $(word 3,$(subst ., ,$(VERSION_FILE)))
-BINARY := gdp_kafka_client
+BINARY := build_binary_payloads
 
 all: clean build
 
@@ -26,13 +26,10 @@ build:
 		-o ./${BINARY} \
 		./${BINARY}.go
 
-envelope:
-	./gdp_kafka_client -topic ProtobufListKafka -pb envelope
+# envelope:
+# 	./gdp_kafka_client -topic ProtobufListKafka -pb envelope
 
-row:
-	./gdp_kafka_client -topic ProtobufKafka -pb row
-
-envelope_delim:
-	./gdp_kafka_client -topic ProtobufListProtodelim -pb envelope -k=false -delim=true
+# row:
+# 	./gdp_kafka_client -topic ProtobufKafka -pb row
 
 # end
