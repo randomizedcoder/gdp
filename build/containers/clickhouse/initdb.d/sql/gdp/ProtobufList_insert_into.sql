@@ -2,7 +2,7 @@
 -- gdp.ProtobufList_insert_rows.sql
 --
 INSERT INTO gdp.ProtobufList (
-    TimestampNs,
+    Timestamp_Ns,
     Hostname,
     Pop,
     Label,

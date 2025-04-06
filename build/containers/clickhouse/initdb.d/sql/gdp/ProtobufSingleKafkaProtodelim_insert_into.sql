@@ -2,7 +2,7 @@
 -- gdp.ProtobufSingleKafkaProtodelim_insert_rows.sql
 --
 INSERT INTO gdp.ProtobufSingleKafkaProtodelim (
-    TimestampNs,
+    Timestamp_Ns,
     Hostname,
     Pop,
     Label,

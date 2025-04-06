@@ -4,10 +4,20 @@
 DROP VIEW IF EXISTS gdp.ProtobufListKafka_mv;
 
 CREATE MATERIALIZED VIEW gdp.ProtobufListKafka_mv TO gdp.ProtobufListKafka
-  AS SELECT *
+  AS SELECT
+    *,
+--    toDateTime64(Timestamp_Ns, 9, 'UTC') AS Timestamp_Ns,
+--    Hostname,
+--    Pop,
+--    Label,
+--    Tag,
+--    Poll_Counter,
+--    Record_Counter,
+--    Function,
+--    Variable,
+--    Type,
+--    Value,
   FROM gdp.ProtobufListKafka_kafka;
-
---  WHERE length(_error) == 0;
 
 -- SHOW CREATE TABLE gdp.ProtobufListKafka_mv;
 

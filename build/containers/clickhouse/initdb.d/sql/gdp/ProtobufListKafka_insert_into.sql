@@ -2,7 +2,7 @@
 -- gdp.ProtobufListKafka_insert_rows.sql
 --
 INSERT INTO gdp.ProtobufListKafka (
-    TimestampNs,
+    Timestamp_Ns,
     Hostname,
     Pop,
     Label,

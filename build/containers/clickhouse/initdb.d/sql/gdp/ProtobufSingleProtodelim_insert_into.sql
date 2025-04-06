@@ -2,7 +2,7 @@
 -- gdp.ProtobufSingleProtodelim_insert_rows.sql
 --
 INSERT INTO gdp.ProtobufSingleProtodelim (
-    TimestampNs,
+    Timestamp_Ns,
     Hostname,
     Pop,
     Label,
