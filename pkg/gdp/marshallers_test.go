@@ -64,6 +64,40 @@ func TestMarshal(t *testing.T) {
 				Protodelim:  true,
 			},
 		},
+		{
+			comment: "ProtobufListProtodelim_2",
+			envelope: &gdpp.Envelope{
+				Rows: []*gdpp.Envelope_PromRecordCounter{
+					{
+						TimestampNs:   float64(time.Date(2025, time.April, 5, 23, 59, 12, 841076736, time.UTC).UnixNano()) / 1e9,
+						Hostname:      "1d93eab32382",
+						PollCounter:   83,
+						RecordCounter: 0,
+						Function:      "Poller",
+						Variable:      "pollingLoops",
+						Type:          "count",
+						Value:         84,
+					},
+					{
+						TimestampNs:   float64(time.Date(2025, time.April, 5, 23, 59, 12, 841076736, time.UTC).UnixNano()) / 1e9,
+						Hostname:      "1d93eab32382",
+						PollCounter:   83,
+						RecordCounter: 1,
+						Function:      "Poller",
+						Variable:      "ticker",
+						Type:          "count",
+						Value:         84,
+					},
+				},
+			},
+			protofile: "test_data/gdp.ProtobufListProtodelim.bin_2025_04_05_1755",
+			mc: &gdp_config.MarshalConfig{
+				MarshalType: "ProtobufList",
+				Topic:       "ProtobufListProtodelim",
+				KafkaHeader: false,
+				Protodelim:  true,
+			},
+		},
 	}
 
 	for _, test := range tests {

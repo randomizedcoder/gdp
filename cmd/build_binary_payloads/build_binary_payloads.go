@@ -174,6 +174,31 @@ func write(of *string, f *string, g *gdp.GDP) {
 	// FORMAT ProtobufList
 	// SETTINGS format_schema = '/var/lib/clickhouse/format_schemas/prometheus_protolist.proto:PromRecordCounter'
 
+	SELECT
+	Timestamp_Ns,
+	Hostname,
+	Pop,
+	Label,
+	Tag,
+	Poll_Counter,
+	Record_Counter,
+	Function,
+	Variable,
+	Type,
+	Value
+	FROM gdp.ProtobufListProtodelim
+	INTO OUTFILE 'gdp.ProtobufListProtodelim.bin'
+	FORMAT ProtobufList
+	SETTINGS format_schema = '/var/lib/clickhouse/format_schemas/prometheus_protolist.proto:PromRecordCounter'
+
+SELECT
+  *
+FROM gdp.ProtobufSingle
+LIMIT 2
+INTO OUTFILE 'gdp.ProtobufListProtodelim.bin'
+FORMAT ProtobufList
+SETTINGS format_schema = '/var/lib/clickhouse/format_schemas/prometheus_protolist.proto:PromRecordCounter'
+
 	// Query id: 1bd7d073-6102-4a6d-a797-cfe890a8d2a8
 
 	// 2 rows in set. Elapsed: 0.002 sec.
