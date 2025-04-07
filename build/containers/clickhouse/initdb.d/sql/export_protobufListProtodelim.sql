@@ -1,6 +1,6 @@
 SELECT
   *
-FROM gdp.ProtobufSingle
+FROM gdp.ProtobufListProtodelim
 LIMIT 2
 INTO OUTFILE 'gdp.ProtobufListProtodelim.bin'
 FORMAT ProtobufList
