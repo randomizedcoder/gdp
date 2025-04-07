@@ -19,13 +19,10 @@ CREATE TABLE IF NOT EXISTS gdp.ProtobufListProtodelim_kafka (
 ENGINE = Kafka SETTINGS
   kafka_broker_list = 'redpanda-0:9092',
   kafka_topic_list = 'ProtobufListProtodelim',
-  kafka_schema = 'prometheus_protolist.proto:PromRecordCounter',
-  kafka_max_rows_per_message = 10000,
-  kafka_num_consumers = 1,
-  kafka_thread_per_consumer = 0,
   kafka_group_name = 'ProtobufListProtodelim',
-  kafka_skip_broken_messages = 1,
+  kafka_schema = 'prometheus_protolist.proto:PromRecordCounter',
   kafka_handle_error_mode = 'stream',
+  kafka_poll_max_batch_size = 2048,
   kafka_format = 'ProtobufList';
 
 -- SHOW CREATE TABLE gdp.ProtobufListProtodelim_kafka;
@@ -33,8 +30,13 @@ ENGINE = Kafka SETTINGS
 -- DETACH TABLE gdp.ProtobufListProtodelim_kafka;
 -- SELECT * FROM gdp.ProtobufListProtodelim_kafka LIMIT 20;
 
+-- kafka_handle_error_mode — How to handle errors for Kafka engine. Possible values: default
+-- (the exception will be thrown if we fail to parse a message), stream (the exception message
+-- and raw message will be saved in virtual columns _error and _raw_message).
+
 -- https://clickhouse.com/docs/integrations/kafka/kafka-table-engine
 -- https://clickhouse.com/docs/engines/table-engines/integrations/kafka#creating-a-table
+-- https://github.com/confluentinc/librdkafka/blob/master/CONFIGURATION.md
 -- kafka_format last! = https://github.com/ClickHouse/ClickHouse/issues/37895
 
 -- end
