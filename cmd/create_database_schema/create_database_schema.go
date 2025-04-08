@@ -321,25 +321,38 @@ func generateCreateKafkaTableSQL(mc *gdp_config.MarshalConfig, tableName string,
 	sb.WriteString("ENGINE = Kafka SETTINGS\n")
 	sb.WriteString("  kafka_broker_list = 'redpanda-0:9092',\n")
 	sb.WriteString(fmt.Sprintf("  kafka_topic_list = '%s',\n", mc.Topic))
-	sb.WriteString(fmt.Sprintf("  kafka_schema = '%s',\n", kafka_schema))
-	sb.WriteString("  kafka_max_rows_per_message = 10000,\n")
-
-	sb.WriteString("  kafka_num_consumers = 1,\n")
-	sb.WriteString("  kafka_thread_per_consumer = 0,\n")
 	sb.WriteString(fmt.Sprintf("  kafka_group_name = '%s',\n", mc.Topic))
-	sb.WriteString("  kafka_skip_broken_messages = 1,\n")
+	sb.WriteString(fmt.Sprintf("  kafka_schema = '%s',\n", kafka_schema))
+	// kafka_num_consumers default = 1
+	// sb.WriteString("  kafka_num_consumers = 1,\n")
+	// kafka_thread_per_consumer default = 0
+	// sb.WriteString("  kafka_thread_per_consumer = 0,\n")
+	// Not going to skip broken for now
+	// https://clickhouse.com/docs/integrations/kafka/kafka-table-engine#handling-malformed-messages
+	// sb.WriteString("  kafka_skip_broken_messages = 1,\n")
 	sb.WriteString("  kafka_handle_error_mode = 'stream',\n")
+	// kafka_poll_max_batch_size — Maximum amount of messages to be polled in a single Kafka poll. Default: max_block_size.
+	// https://clickhouse.com/docs/operations/settings/settings#max_block_size = 65409
+	sb.WriteString("  kafka_poll_max_batch_size = 2048,\n")
 	sb.WriteString(fmt.Sprintf("  kafka_format = '%s';\n\n", mc.MarshalType))
 	// format must be last!
 	// https://github.com/ClickHouse/ClickHouse/issues/37895
+
+	// this is a producer setting
+	// sb.WriteString("  kafka_max_rows_per_message = 10000,\n")
 
 	sb.WriteString(fmt.Sprintf("-- SHOW CREATE TABLE %s;\n", kafkaTableName))
 	sb.WriteString("-- SELECT * FROM system.kafka_consumers FORMAT Vertical;\n")
 	sb.WriteString(fmt.Sprintf("-- DETACH TABLE %s;\n", kafkaTableName))
 	sb.WriteString(fmt.Sprintf("-- SELECT * FROM %s LIMIT 20;\n\n", kafkaTableName))
 
+	sb.WriteString("-- kafka_handle_error_mode — How to handle errors for Kafka engine. Possible values: default\n")
+	sb.WriteString("-- (the exception will be thrown if we fail to parse a message), stream (the exception message\n")
+	sb.WriteString("-- and raw message will be saved in virtual columns _error and _raw_message).\n\n")
+
 	sb.WriteString("-- https://clickhouse.com/docs/integrations/kafka/kafka-table-engine\n")
 	sb.WriteString("-- https://clickhouse.com/docs/engines/table-engines/integrations/kafka#creating-a-table\n")
+	sb.WriteString("-- https://github.com/confluentinc/librdkafka/blob/master/CONFIGURATION.md\n")
 	sb.WriteString("-- kafka_format last! = https://github.com/ClickHouse/ClickHouse/issues/37895\n\n")
 
 	sb.WriteString("-- end\n\n")

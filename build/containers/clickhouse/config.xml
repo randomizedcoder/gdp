@@ -375,6 +375,9 @@
     <tables_loader_background_pool_size>0</tables_loader_background_pool_size>
     -->
     <background_pool_size>32</background_pool_size>
+    <!-- https://kb.altinity.com/altinity-kb-integrations/altinity-kb-kafka/background_message_broker_schedule_pool_size/ -->
+    <!-- TODO - actually check this per article.  Just doubling it for now 16 default -> 32 -->
+    <background_message_broker_schedule_pool_size>32</background_message_broker_schedule_pool_size>
 
     <!-- Enables asynchronous loading of databases and tables to speedup server startup.
          Queries to not yet loaded entity will be blocked until load is finished.
