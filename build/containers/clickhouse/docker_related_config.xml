@@ -26,6 +26,8 @@
         Configuration property compression.codec is a producer property and will be ignored by this consumer instance
         -->
         <!-- Increase max.poll.interval.ms to 10 minutes (600000 milliseconds) default is 5 minutes -->
-        <max_poll_interval_ms>600000</max_poll_interval_ms>
+        <!-- <max_poll_interval_ms>600000</max_poll_interval_ms> -->
+        <!-- 15 minutes -->
+        <max_poll_interval_ms>900000</max_poll_interval_ms>
     </kafka>
 </clickhouse>
