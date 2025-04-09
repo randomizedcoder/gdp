@@ -275,6 +275,10 @@ func generateCreateTableSQL(tableName string, columnsSQL string) string {
 	sb.WriteString(fmt.Sprintf("-- SHOW CREATE TABLE %s;\n", tableName))
 	sb.WriteString(fmt.Sprintf("-- SELECT * FROM %s LIMIT 20;\n\n", tableName))
 
+	sb.WriteString("-- SELECT\n")
+	sb.WriteString("--   count(DISTINCT Poll_Counter)\n")
+	sb.WriteString(fmt.Sprintf("-- FROM %s;\n\n", tableName))
+
 	sb.WriteString("-- https://clickhouse.com/docs/guides/developer/ttl\n")
 	sb.WriteString("-- https://clickhouse.com/docs/sql-reference/statements/alter/ttl\n")
 	sb.WriteString("-- https://clickhouse.com/docs/engines/table-engines/mergetree-family/mergetree#table_engine-mergetree-ttl\n")
@@ -333,7 +337,7 @@ func generateCreateKafkaTableSQL(mc *gdp_config.MarshalConfig, tableName string,
 	sb.WriteString("  kafka_handle_error_mode = 'stream',\n")
 	// kafka_poll_max_batch_size — Maximum amount of messages to be polled in a single Kafka poll. Default: max_block_size.
 	// https://clickhouse.com/docs/operations/settings/settings#max_block_size = 65409
-	sb.WriteString("  kafka_poll_max_batch_size = 2048,\n")
+	sb.WriteString("  kafka_poll_max_batch_size = 10,\n") // 2048 suggested by Altinity
 	sb.WriteString(fmt.Sprintf("  kafka_format = '%s';\n\n", mc.MarshalType))
 	// format must be last!
 	// https://github.com/ClickHouse/ClickHouse/issues/37895

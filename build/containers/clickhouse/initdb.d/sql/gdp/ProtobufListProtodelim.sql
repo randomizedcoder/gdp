@@ -26,6 +26,10 @@ TTL toDateTime(Timestamp_Ns) + INTERVAL 14 DAY;
 -- SHOW CREATE TABLE gdp.ProtobufListProtodelim;
 -- SELECT * FROM gdp.ProtobufListProtodelim LIMIT 20;
 
+-- SELECT
+--   count(DISTINCT Poll_Counter)
+-- FROM gdp.ProtobufListProtodelim;
+
 -- https://clickhouse.com/docs/guides/developer/ttl
 -- https://clickhouse.com/docs/sql-reference/statements/alter/ttl
 -- https://clickhouse.com/docs/engines/table-engines/mergetree-family/mergetree#table_engine-mergetree-ttl
