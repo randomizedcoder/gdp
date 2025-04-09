@@ -127,9 +127,9 @@ services:
     environment:
       # https://clickhouse.com/docs/en/operations/access-rights
       # CLICKHOUSE_DB: default
-      # CLICKHOUSE_USER: default
+      CLICKHOUSE_USER: default
       # CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: default
-      # CLICKHOUSE_PASSWORD: default
+      CLICKHOUSE_PASSWORD: default123
       CLICKHOUSE_ALWAYS_RUN_INITDB_SCRIPTS: true
       # Env var switches:
       # https://github.com/ClickHouse/ClickHouse/blob/master/docker/server/entrypoint.sh
