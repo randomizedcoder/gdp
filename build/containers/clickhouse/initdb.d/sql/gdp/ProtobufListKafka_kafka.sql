@@ -27,7 +27,7 @@ ENGINE = Kafka SETTINGS
 
 -- SHOW CREATE TABLE gdp.ProtobufListKafka_kafka;
 -- SELECT * FROM system.kafka_consumers FORMAT Vertical;
--- SELECT * FROM system.kafka_consumers WHERE table LIKE '%gdp.ProtobufListKafka_kafka%' FORMAT Vertical;
+-- SELECT * FROM system.kafka_consumers WHERE table LIKE '%ProtobufListKafka_kafka%' FORMAT Vertical;
 -- DETACH TABLE gdp.ProtobufListKafka_kafka;
 -- SELECT * FROM gdp.ProtobufListKafka_kafka LIMIT 20;
 
