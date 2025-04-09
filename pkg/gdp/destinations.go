@@ -67,41 +67,74 @@ func (g *GDP) destKafka(ctx context.Context, binaryProto *[]byte, mc *gdp_config
 
 	kafkaStartTime := time.Now()
 
-	// https://pkg.go.dev/github.com/twmb/franz-go/pkg/kgo#Client.Produce
-	g.kClient.Produce(
-		ctxP,
-		kgoRecord,
-		func(kgoRecord *kgo.Record, err error) {
+	// // https://pkg.go.dev/github.com/twmb/franz-go/pkg/kgo#Client.Produce
+	// g.kClient.Produce(
+	// 	ctxP,
+	// 	kgoRecord,
+	// 	func(kgoRecord *kgo.Record, err error) {
 
-			dur := time.Since(kafkaStartTime)
+	// 		dur := time.Since(kafkaStartTime)
 
-			g.kgoRecordPool.Put(kgoRecord)
-			// g.pC.WithLabelValues("kgoRecordPool", "Put", "count").Inc()
+	// 		g.kgoRecordPool.Put(kgoRecord)
+	// 		// g.pC.WithLabelValues("kgoRecordPool", "Put", "count").Inc()
 
-			*binaryProto = (*binaryProto)[:0]
-			g.destBytesPool.Put(binaryProto)
-			// g.pC.WithLabelValues("destBytesPool", "Put", "count").Inc()
+	// 		*binaryProto = (*binaryProto)[:0]
+	// 		g.destBytesPool.Put(binaryProto)
+	// 		// g.pC.WithLabelValues("destBytesPool", "Put", "count").Inc()
 
-			//cancelP()
-			if err != nil {
-				g.pH.WithLabelValues("destKafka", mc.Topic, "error").Observe(dur.Seconds())
-				g.pC.WithLabelValues("destKafka", mc.Topic, "error").Inc()
-				if g.debugLevel > 10 {
-					log.Printf("destKafka %0.6fs Produce err:%v", dur.Seconds(), err)
-				}
-				return
-			}
+	// 		//cancelP()
+	// 		if err != nil {
+	// 			g.pH.WithLabelValues("destKafka", mc.Topic, "error").Observe(dur.Seconds())
+	// 			g.pC.WithLabelValues("destKafka", mc.Topic, "error").Inc()
+	// 			if g.debugLevel > 10 {
+	// 				log.Printf("destKafka %0.6fs Produce err:%v", dur.Seconds(), err)
+	// 			}
+	// 			return
+	// 		}
 
-			g.pH.WithLabelValues("destKafka", mc.Topic, "count").Observe(dur.Seconds())
-			g.pC.WithLabelValues("destKafka", mc.Topic, "count").Inc()
-			g.pC.WithLabelValues("destKafka", mc.Topic, "n").Add(float64(n))
+	// 		g.pH.WithLabelValues("destKafka", mc.Topic, "count").Observe(dur.Seconds())
+	// 		g.pC.WithLabelValues("destKafka", mc.Topic, "count").Inc()
+	// 		g.pC.WithLabelValues("destKafka", mc.Topic, "n").Add(float64(n))
 
+	// 		if g.debugLevel > 10 {
+	// 			//formattedTopic := fmt.Sprintf("%31s", mc.Topic)
+	// 			log.Printf("destKafka mc.t:%s sc:%d len:%d %0.6fs %dms j:%s", mc.MarshalType, mc.SchemaID, n, dur.Seconds(), dur.Milliseconds(), json)
+	// 		}
+	// 	},
+	// )
+	// https://pkg.go.dev/github.com/twmb/franz-go/pkg/kgo#Client.ProduceSync
+	results := g.kClient.ProduceSync(ctxP, kgoRecord)
+
+	dur := time.Since(kafkaStartTime)
+
+	for _, result := range results {
+		if result.Err != nil {
+
+			err = result.Err
+			g.pH.WithLabelValues("destKafka", mc.Topic, "error").Observe(dur.Seconds())
+			g.pC.WithLabelValues("destKafka", mc.Topic, "error").Inc()
 			if g.debugLevel > 10 {
-				//formattedTopic := fmt.Sprintf("%31s", mc.Topic)
-				log.Printf("destKafka mc.t:%s sc:%d len:%d %0.6fs %dms j:%s", mc.MarshalType, mc.SchemaID, n, dur.Seconds(), dur.Milliseconds(), json)
+				log.Printf("destKafka %0.6fs Produce err:%v", dur.Seconds(), err)
 			}
-		},
-	)
+			return
+		}
+	}
+
+	g.kgoRecordPool.Put(kgoRecord)
+	// g.pC.WithLabelValues("kgoRecordPool", "Put", "count").Inc()
+
+	*binaryProto = (*binaryProto)[:0]
+	g.destBytesPool.Put(binaryProto)
+	// g.pC.WithLabelValues("destBytesPool", "Put", "count").Inc()
+
+	g.pH.WithLabelValues("destKafka", mc.Topic, "count").Observe(dur.Seconds())
+	g.pC.WithLabelValues("destKafka", mc.Topic, "count").Inc()
+	g.pC.WithLabelValues("destKafka", mc.Topic, "n").Add(float64(n))
+
+	if g.debugLevel > 10 {
+		//formattedTopic := fmt.Sprintf("%31s", mc.Topic)
+		log.Printf("destKafka mc.t:%s sc:%d len:%d %0.6fs %dms j:%s", mc.MarshalType, mc.SchemaID, n, dur.Seconds(), dur.Milliseconds(), json)
+	}
 
 	return n, err
 }
