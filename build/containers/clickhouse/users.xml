@@ -57,7 +57,7 @@
             <password></password>
             <password>password</password>
             -->
-	    <password remove="1"/>
+        <password remove="1"/>
 
             <!-- List of networks with open access.
 
@@ -111,6 +111,11 @@
             <quota>default</quota>
             <access_management>1</access_management>
             <named_collection_control>1</named_collection_control>
+            <!--
+            <grants>
+                <query>GRANT ALL ON *.* WITH GRANT OPTION</query>
+            </grants>
+            -->
         </dave>
     </users>
 

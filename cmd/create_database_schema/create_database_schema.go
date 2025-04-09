@@ -347,7 +347,8 @@ func generateCreateKafkaTableSQL(mc *gdp_config.MarshalConfig, tableName string,
 
 	sb.WriteString(fmt.Sprintf("-- SHOW CREATE TABLE %s;\n", kafkaTableName))
 	sb.WriteString("-- SELECT * FROM system.kafka_consumers FORMAT Vertical;\n")
-	sb.WriteString(fmt.Sprintf("-- SELECT * FROM system.kafka_consumers WHERE table LIKE '%%%s%%' FORMAT Vertical;\n", kafkaTableName))
+	parts := strings.Split(kafkaTableName, ".")
+	sb.WriteString(fmt.Sprintf("-- SELECT * FROM system.kafka_consumers WHERE table LIKE '%%%s%%' FORMAT Vertical;\n", parts[1]))
 	sb.WriteString(fmt.Sprintf("-- DETACH TABLE %s;\n", kafkaTableName))
 	sb.WriteString(fmt.Sprintf("-- SELECT * FROM %s LIMIT 20;\n\n", kafkaTableName))
 
