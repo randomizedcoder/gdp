@@ -11,13 +11,11 @@ ARG GDPPATH
 ARG VERSION
 
 # https://hub.docker.com/r/clickhouse/clickhouse-server/tags
-# FROM clickhouse/clickhouse-server:24.8.4.13-alpine
-# FROM clickhouse/clickhouse-server:24.11.2.101-alpine
-# FROM clickhouse/clickhouse-server:24.8.12-alpine
-# FROM clickhouse/clickhouse-server:24.8.12
-# FROM clickhouse/clickhouse-server:24.12.4
-# FROM clickhouse/clickhouse-server:25.1.5.31
-FROM clickhouse/clickhouse-server:25.3.1
+# FROM clickhouse/clickhouse-server:25.3.1
+# FROM clickhouse/clickhouse-server:25.3.2.39
+FROM clickhouse/clickhouse-server@sha256:866f55d1630121567909704e97d47f08700d96d8e2b8b416b7620b4a86a098b0
+# grabbing head as of 2025/April/9th ~10am PST
+# sha256:866f55d1630121567909704e97d47f08700d96d8e2b8b416b7620b4a86a098b0
 
 ARG GDPPATH
 ARG VERSION
@@ -74,9 +72,7 @@ COPY --chmod=644 \
 # 	./build/containers/clickhouse/sysctl.conf \
 # 	/etc/sysctl.conf
 
-COPY --chmod=644 \
-	./VERSION \
-	/VERSION
+COPY --chmod=644 ./VERSION /VERSION
 
 RUN cat /VERSION
 

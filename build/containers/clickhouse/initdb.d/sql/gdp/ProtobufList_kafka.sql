@@ -22,11 +22,12 @@ ENGINE = Kafka SETTINGS
   kafka_group_name = 'ProtobufList',
   kafka_schema = 'prometheus_protolist.proto:PromRecordCounter',
   kafka_handle_error_mode = 'stream',
-  kafka_poll_max_batch_size = 2048,
+  kafka_poll_max_batch_size = 10,
   kafka_format = 'ProtobufList';
 
 -- SHOW CREATE TABLE gdp.ProtobufList_kafka;
 -- SELECT * FROM system.kafka_consumers FORMAT Vertical;
+-- SELECT * FROM system.kafka_consumers WHERE table LIKE '%gdp.ProtobufList_kafka%' FORMAT Vertical;
 -- DETACH TABLE gdp.ProtobufList_kafka;
 -- SELECT * FROM gdp.ProtobufList_kafka LIMIT 20;
 

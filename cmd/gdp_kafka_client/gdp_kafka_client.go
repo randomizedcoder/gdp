@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	gdpp "github.com/randomizedcoder/gdp/pkg/prometheus"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -92,12 +93,15 @@ func main() {
 		log.Println("kgo.NewClient complete")
 	}
 
+	startTime := time.Now()
+
 	for i := 0; ; i++ {
-		processMessages(ctx, cl, *k, *delim, *pb)
+		pollStartTime := time.Now()
+		processMessages(ctx, startTime, pollStartTime, cl, *k, *delim, *pb)
 	}
 }
 
-func processMessages(ctx context.Context, cl *kgo.Client, kafkaHeader bool, delim bool, pbType string) {
+func processMessages(ctx context.Context, startTime time.Time, pollStartTime time.Time, cl *kgo.Client, kafkaHeader bool, delim bool, pbType string) {
 	fetches := cl.PollFetches(ctx)
 	if errs := fetches.Errors(); len(errs) > 0 {
 		log.Printf("fetch errors: %v", errs)
@@ -105,11 +109,11 @@ func processMessages(ctx context.Context, cl *kgo.Client, kafkaHeader bool, deli
 	}
 
 	fetches.EachRecord(func(record *kgo.Record) {
-		processRecord(record, kafkaHeader, delim, pbType)
+		processRecord(startTime, pollStartTime, record, kafkaHeader, delim, pbType)
 	})
 }
 
-func processRecord(record *kgo.Record, kafkaHeader bool, delim bool, pbType string) {
+func processRecord(startTime time.Time, pollStartTime time.Time, record *kgo.Record, kafkaHeader bool, delim bool, pbType string) {
 	if kafkaHeader {
 		if len(record.Value) < KafkaHeaderSizeCst {
 			if debugLevel > 10 {
@@ -117,13 +121,13 @@ func processRecord(record *kgo.Record, kafkaHeader bool, delim bool, pbType stri
 			}
 			return
 		}
-		processRecordInner(record.Value[KafkaHeaderSizeCst:], pbType, delim)
+		processRecordInner(startTime, pollStartTime, record.Value[KafkaHeaderSizeCst:], pbType, delim)
 	} else if delim {
-		processRecordInner(record.Value, pbType, delim)
+		processRecordInner(startTime, pollStartTime, record.Value, pbType, delim)
 	}
 }
 
-func processRecordInner(b []byte, pbType string, delim bool) {
+func processRecordInner(startTime time.Time, pollStartTime time.Time, b []byte, pbType string, delim bool) {
 	var (
 		msg interface{}
 		err error
@@ -188,7 +192,7 @@ func processRecordInner(b []byte, pbType string, delim bool) {
 		return
 	}
 
-	log.Printf("Processed message: %s", jsonBytes)
+	log.Printf("Processed st:%dms pt:%dms message: %s", time.Since(startTime).Milliseconds(), time.Since(pollStartTime).Milliseconds(), jsonBytes)
 }
 
 // initSignalHandler sets up signal handling for the process, and
