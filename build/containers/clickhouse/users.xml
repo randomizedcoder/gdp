@@ -57,7 +57,7 @@
             <password></password>
             <password>password</password>
             -->
-	    <password remove="1"/>
+        <password remove="1"/>
 
             <!-- List of networks with open access.
 
