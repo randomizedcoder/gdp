@@ -53,6 +53,18 @@ func (g *GDP) destKafka(ctx context.Context, binaryProto *[]byte, mc *gdp_config
 		log.Printf("destKafka, mc.t:%s, n:%d, j:%s", mc.MarshalType, n, json)
 	}
 
+	// if g.debugLevel > 10 {
+	// 	if deadline, ok := ctx.Deadline(); ok {
+	// 		log.Printf("destKafka, ctx.Deadline():%s, until:%0.3f", deadline.String(), time.Until(deadline).Seconds())
+	// 	} else {
+	// 		log.Printf("destKafka, ctx.Deadline() is none")
+	// 	}
+	// }
+
+	// if g.debugLevel > 10 {
+	// 	log.Printf("destKafka, g.Config.KafkaProduceTimeout.AsDuration():%s", g.Config.KafkaProduceTimeout.AsDuration())
+	// }
+
 	var (
 		ctxP    context.Context
 		cancelP context.CancelFunc
@@ -61,83 +73,102 @@ func (g *GDP) destKafka(ctx context.Context, binaryProto *[]byte, mc *gdp_config
 		// I don't understand why setting a context with a timeout doesn't work,
 		// but it definitely doesn't.  It always says the context is canceled. ?!
 		ctxP, cancelP = context.WithTimeout(ctx, g.Config.KafkaProduceTimeout.AsDuration())
-		defer cancelP()
 	}
 	// https://pkg.go.dev/google.golang.org/protobuf/types/known/durationpb
 
 	kafkaStartTime := time.Now()
 
-	// // https://pkg.go.dev/github.com/twmb/franz-go/pkg/kgo#Client.Produce
-	// g.kClient.Produce(
-	// 	ctxP,
-	// 	kgoRecord,
-	// 	func(kgoRecord *kgo.Record, err error) {
+	// https://pkg.go.dev/github.com/twmb/franz-go/pkg/kgo#Client.Produce
+	g.kClient.Produce(
+		ctxP,
+		kgoRecord,
+		func(kgoRecord *kgo.Record, err error) {
 
-	// 		dur := time.Since(kafkaStartTime)
+			dur := time.Since(kafkaStartTime)
 
-	// 		g.kgoRecordPool.Put(kgoRecord)
-	// 		// g.pC.WithLabelValues("kgoRecordPool", "Put", "count").Inc()
+			g.kgoRecordPool.Put(kgoRecord)
+			// g.pC.WithLabelValues("kgoRecordPool", "Put", "count").Inc()
 
-	// 		*binaryProto = (*binaryProto)[:0]
-	// 		g.destBytesPool.Put(binaryProto)
-	// 		// g.pC.WithLabelValues("destBytesPool", "Put", "count").Inc()
+			*binaryProto = (*binaryProto)[:0]
+			g.destBytesPool.Put(binaryProto)
+			// g.pC.WithLabelValues("destBytesPool", "Put", "count").Inc()
 
-	// 		//cancelP()
-	// 		if err != nil {
-	// 			g.pH.WithLabelValues("destKafka", mc.Topic, "error").Observe(dur.Seconds())
-	// 			g.pC.WithLabelValues("destKafka", mc.Topic, "error").Inc()
-	// 			if g.debugLevel > 10 {
-	// 				log.Printf("destKafka %0.6fs Produce err:%v", dur.Seconds(), err)
-	// 			}
-	// 			return
-	// 		}
-
-	// 		g.pH.WithLabelValues("destKafka", mc.Topic, "count").Observe(dur.Seconds())
-	// 		g.pC.WithLabelValues("destKafka", mc.Topic, "count").Inc()
-	// 		g.pC.WithLabelValues("destKafka", mc.Topic, "n").Add(float64(n))
-
-	// 		if g.debugLevel > 10 {
-	// 			//formattedTopic := fmt.Sprintf("%31s", mc.Topic)
-	// 			log.Printf("destKafka mc.t:%s sc:%d len:%d %0.6fs %dms j:%s", mc.MarshalType, mc.SchemaID, n, dur.Seconds(), dur.Milliseconds(), json)
-	// 		}
-	// 	},
-	// )
-	// https://pkg.go.dev/github.com/twmb/franz-go/pkg/kgo#Client.ProduceSync
-	results := g.kClient.ProduceSync(ctxP, kgoRecord)
-
-	dur := time.Since(kafkaStartTime)
-
-	for _, result := range results {
-		if result.Err != nil {
-
-			err = result.Err
-			g.pH.WithLabelValues("destKafka", mc.Topic, "error").Observe(dur.Seconds())
-			g.pC.WithLabelValues("destKafka", mc.Topic, "error").Inc()
-			if g.debugLevel > 10 {
-				log.Printf("destKafka %0.6fs Produce err:%v", dur.Seconds(), err)
+			cancelP()
+			if err != nil {
+				g.pH.WithLabelValues("destKafka", mc.Topic, "error").Observe(dur.Seconds())
+				g.pC.WithLabelValues("destKafka", mc.Topic, "error").Inc()
+				if g.debugLevel > 10 {
+					log.Printf("destKafka %0.6fs Produce err:%v", dur.Seconds(), err)
+				}
+				return
 			}
-			return
-		}
-	}
 
-	g.kgoRecordPool.Put(kgoRecord)
-	// g.pC.WithLabelValues("kgoRecordPool", "Put", "count").Inc()
+			g.pH.WithLabelValues("destKafka", mc.Topic, "count").Observe(dur.Seconds())
+			g.pC.WithLabelValues("destKafka", mc.Topic, "count").Inc()
+			g.pC.WithLabelValues("destKafka", mc.Topic, "n").Add(float64(n))
 
-	*binaryProto = (*binaryProto)[:0]
-	g.destBytesPool.Put(binaryProto)
-	// g.pC.WithLabelValues("destBytesPool", "Put", "count").Inc()
+			if g.debugLevel > 10 {
+				//formattedTopic := fmt.Sprintf("%31s", mc.Topic)
+				log.Printf("destKafka mc.t:%s sc:%d len:%d %0.6fs %dms j:%s", mc.MarshalType, mc.SchemaID, n, dur.Seconds(), dur.Milliseconds(), json)
+			}
+		},
+	)
 
-	g.pH.WithLabelValues("destKafka", mc.Topic, "count").Observe(dur.Seconds())
-	g.pC.WithLabelValues("destKafka", mc.Topic, "count").Inc()
-	g.pC.WithLabelValues("destKafka", mc.Topic, "n").Add(float64(n))
+	// https://pkg.go.dev/github.com/twmb/franz-go/pkg/kgo#Client.ProduceSync
+	// results := g.kClient.ProduceSync(ctxP, kgoRecord)
 
-	if g.debugLevel > 10 {
-		//formattedTopic := fmt.Sprintf("%31s", mc.Topic)
-		log.Printf("destKafka mc.t:%s sc:%d len:%d %0.6fs %dms j:%s", mc.MarshalType, mc.SchemaID, n, dur.Seconds(), dur.Milliseconds(), json)
-	}
+	// dur := time.Since(kafkaStartTime)
+
+	// for _, result := range results {
+	// 	if result.Err != nil {
+
+	// 		err = result.Err
+	// 		g.pH.WithLabelValues("destKafka", mc.Topic, "error").Observe(dur.Seconds())
+	// 		g.pC.WithLabelValues("destKafka", mc.Topic, "error").Inc()
+	// 		if g.debugLevel > 10 {
+	// 			log.Printf("destKafka %0.6fs Produce err:%v", dur.Seconds(), err)
+	// 		}
+	// 		return
+	// 	}
+	// }
+
+	// g.kgoRecordPool.Put(kgoRecord)
+	// // g.pC.WithLabelValues("kgoRecordPool", "Put", "count").Inc()
+
+	// *binaryProto = (*binaryProto)[:0]
+	// g.destBytesPool.Put(binaryProto)
+	// // g.pC.WithLabelValues("destBytesPool", "Put", "count").Inc()
+
+	// g.pH.WithLabelValues("destKafka", mc.Topic, "count").Observe(dur.Seconds())
+	// g.pC.WithLabelValues("destKafka", mc.Topic, "count").Inc()
+	// g.pC.WithLabelValues("destKafka", mc.Topic, "n").Add(float64(n))
+
+	// if g.debugLevel > 10 {
+	// 	//formattedTopic := fmt.Sprintf("%31s", mc.Topic)
+	// 	log.Printf("destKafka mc.t:%s sc:%d len:%d %0.6fs %dms j:%s", mc.MarshalType, mc.SchemaID, n, dur.Seconds(), dur.Milliseconds(), json)
+	// }
 
 	return n, err
 }
+
+// func (g *GDP) ProduceSyncWithTimeout(ctx context.Context,kgoRecord *kgo.Record) kgo.ProduceResults {
+// 	resultsChan := make(chan kgo.ProduceResults, 1)
+// 	go func() {
+// 		resultsChan <- g.kClient.ProduceSync(ctx, kgoRecord)
+// 	}()
+
+// 	select {
+// 	case results := <-resultsChan:
+// 		return results
+// 	case <-ctx.Done():
+// 		return kgo.ProduceResults{
+// 			{
+// 				Record: kgoRecord,
+// 				Err:    ctx.Err(),
+// 			},
+// 		}
+// 	}
+// }
 
 func (g *GDP) printPayload(c string, binaryProto *[]byte, mc *gdp_config.MarshalConfig) string {
 
