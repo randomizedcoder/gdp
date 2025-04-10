@@ -214,6 +214,8 @@ services:
       DEBUG_LEVEL: "111"
       POLL_FREQUENCY: "10s"
       POLL_TIMEOUT: "5s"
+      KAFKA_PRODUCE_TIMEOUT: "2s"
+      # "1ns"
       #
       #GOMEMLIMIT: 148MiB
       # https://tip.golang.org/doc/gc-guide#GOGC
