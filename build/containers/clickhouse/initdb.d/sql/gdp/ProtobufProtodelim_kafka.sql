@@ -1,9 +1,9 @@
 --
--- gdp.ProtobufList_kafka.sql
+-- gdp.ProtobufProtodelim_kafka.sql
 --
-DROP TABLE IF EXISTS gdp.ProtobufList_kafka;
+DROP TABLE IF EXISTS gdp.ProtobufProtodelim_kafka;
 
-CREATE TABLE IF NOT EXISTS gdp.ProtobufList_kafka (
+CREATE TABLE IF NOT EXISTS gdp.ProtobufProtodelim_kafka (
   Timestamp_Ns DateTime64(9,'UTC') CODEC(DoubleDelta, LZ4),
   Hostname LowCardinality(String) CODEC(LZ4),
   Pop LowCardinality(String) CODEC(LZ4),
@@ -18,18 +18,18 @@ CREATE TABLE IF NOT EXISTS gdp.ProtobufList_kafka (
 )
 ENGINE = Kafka SETTINGS
   kafka_broker_list = 'redpanda-0:9092',
-  kafka_topic_list = 'ProtobufList',
-  kafka_group_name = 'ProtobufList',
+  kafka_topic_list = 'ProtobufProtodelim',
+  kafka_group_name = 'ProtobufProtodelim',
   kafka_schema = 'prometheus_protolist.proto:PromRecordCounter',
   kafka_handle_error_mode = 'stream',
-  kafka_poll_max_batch_size = 10,
-  kafka_format = 'ProtobufList';
+  kafka_poll_max_batch_size = 1024,
+  kafka_format = 'Protobuf';
 
--- SHOW CREATE TABLE gdp.ProtobufList_kafka;
+-- SHOW CREATE TABLE gdp.ProtobufProtodelim_kafka;
 -- SELECT * FROM system.kafka_consumers FORMAT Vertical;
--- SELECT * FROM system.kafka_consumers WHERE table LIKE '%ProtobufList_kafka%' FORMAT Vertical;
--- DETACH TABLE gdp.ProtobufList_kafka;
--- SELECT * FROM gdp.ProtobufList_kafka LIMIT 20;
+-- SELECT * FROM system.kafka_consumers WHERE table LIKE '%ProtobufProtodelim_kafka%' FORMAT Vertical;
+-- DETACH TABLE gdp.ProtobufProtodelim_kafka;
+-- SELECT * FROM gdp.ProtobufProtodelim_kafka LIMIT 20;
 
 -- kafka_handle_error_mode — How to handle errors for Kafka engine. Possible values: default
 -- (the exception will be thrown if we fail to parse a message), stream (the exception message

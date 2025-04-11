@@ -165,12 +165,17 @@ func (g *GDP) performPoll(ctx context.Context, pollingLoops uint64) error {
 	wg := new(sync.WaitGroup)
 	g.MarshalConfigs.Range(func(key, value interface{}) bool {
 		mc := value.(*gdp_config.MarshalConfig)
-		wg.Add(1)
-		go g.sendEnvelopeWithMarshalConfig(ctx, wg, pollingLoops, mc, envelope)
-		//g.sendEnvelopeWithMarshalConfig(ctx, wg, pollingLoops, mc, envelope)
 
-		if g.debugLevel > 10 {
-			log.Printf("performPoll, mc:%v", mc)
+		if mc.MaxPollSend == 00 || pollingLoops < uint64(mc.MaxPollSend) {
+
+			wg.Add(1)
+			go g.sendEnvelopeWithMarshalConfig(ctx, wg, pollingLoops, mc, envelope)
+			//g.sendEnvelopeWithMarshalConfig(ctx, wg, pollingLoops, mc, envelope)
+
+			if g.debugLevel > 10 {
+				log.Printf("performPoll, mc:%v", mc)
+			}
+			return true
 		}
 		return true
 	})

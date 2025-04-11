@@ -84,6 +84,13 @@ func main() {
 			log.Printf("mc:%+v", mc)
 		}
 
+		if !mc.CreateDatabaseSchema {
+			if debugLevel > 10 {
+				log.Printf("skipping mc:%+v", mc)
+			}
+			return true
+		}
+
 		tableName := fmt.Sprintf("gdp.%s", mc.Topic)
 
 		mergeTreeSQL := generateCreateTableSQL(tableName, columnsSQL)
@@ -337,7 +344,7 @@ func generateCreateKafkaTableSQL(mc *gdp_config.MarshalConfig, tableName string,
 	sb.WriteString("  kafka_handle_error_mode = 'stream',\n")
 	// kafka_poll_max_batch_size — Maximum amount of messages to be polled in a single Kafka poll. Default: max_block_size.
 	// https://clickhouse.com/docs/operations/settings/settings#max_block_size = 65409
-	sb.WriteString("  kafka_poll_max_batch_size = 10,\n") // 2048 suggested by Altinity
+	sb.WriteString("  kafka_poll_max_batch_size = 1024,\n") // 2048 suggested by Altinity. Tried 10
 	sb.WriteString(fmt.Sprintf("  kafka_format = '%s';\n\n", mc.MarshalType))
 	// format must be last!
 	// https://github.com/ClickHouse/ClickHouse/issues/37895

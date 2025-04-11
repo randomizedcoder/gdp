@@ -108,7 +108,7 @@ func (g *GDP) Run(ctx context.Context, wg *sync.WaitGroup, runPoller bool) {
 
 	defer wg.Done()
 
-	g.pC.WithLabelValues("Run", "start", "counter").Inc()
+	g.pC.WithLabelValues("Run", "start", "count").Inc()
 
 	if runPoller {
 		wg.Add(1)

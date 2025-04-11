@@ -29,10 +29,10 @@ find "${SQL_DIR}" -maxdepth 1 -name "*.sql" ! -name "*_*" -print0 | while IFS= r
     # Extract the base table name
     table_name=$(basename "${base_sql_file}" .sql)
 
-    if ! [[ "${table_name}" =~ ^(ProtobufSingle|ProtobufList) ]]; then
-        echo "Skipping table: ${table_name}"
-        continue
-    fi
+    # if ! [[ "${table_name}" =~ ^(ProtobufSingle|ProtobufList) ]]; then
+    #     echo "Skipping table: ${table_name}"
+    #     continue
+    # fi
 
     echo "Processing table: ${table_name}"
 
