@@ -6,7 +6,13 @@
         <!-- Default settings. -->
         <default>
             <!-- https://github.com/ClickHouse/ClickHouse/blob/master/tests/integration/test_storage_kafka/configs/users.xml -->
-            <stream_like_engine_allow_direct_select>1</stream_like_engine_allow_direct_select>
+            <!-- https://clickhouse.com/docs/operations/settings/settings#stream_like_engine_allow_direct_select -->
+            <!-- <stream_like_engine_allow_direct_select>1</stream_like_engine_allow_direct_select> -->
+
+            <!-- https://clickhouse.com/blog/asynchronous-data-inserts-in-clickhouse#asynchronous-inserts -->
+            <!-- https://clickhouse.com/docs/operations/settings/settings#async_insert -->
+            <async_insert>1</async_insert>
+            <wait_for_async_insert>0</wait_for_async_insert>
         </default>
 
         <!-- Profile that allows only read queries. -->

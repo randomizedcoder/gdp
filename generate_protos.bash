@@ -39,7 +39,7 @@ echo bufbuild/buf lint
 docker run --user "${u}:${g}" \
     --volume "${p}:/workspace" --workdir /workspace \
     --env BUF_CACHE_DIR='/workspace' \
-    bufbuild/buf lint
+    bufbuild/buf:latest lint
 
 echo bufbuild/buf dep update
 docker run --user "${u}:${g}" \
@@ -51,13 +51,13 @@ echo bufbuild/buf build
 docker run --user "${u}:${g}" \
     --volume "${p}:/workspace" --workdir /workspace \
     --env BUF_CACHE_DIR='/workspace' \
-    bufbuild/buf build
+    bufbuild/buf build --debug
 
 echo bufbuild/buf generate
 docker run --user "${u}:${g}" \
     --volume "${p}:/workspace" --workdir /workspace \
     --env BUF_CACHE_DIR='/workspace' \
-    bufbuild/buf generate
+    bufbuild/buf generate --debug
 
 # protos get mounted into the docker container
 # - ${XTCPPATH}/build/containers/clickhouse/format_schemas/:/var/lib/clickhouse/format_schemas/:z

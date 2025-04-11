@@ -17,37 +17,104 @@ func (g *GDP) InitMarshalConfigs(wg *sync.WaitGroup) {
 
 	g.MarshalConfigs = &sync.Map{}
 
-	marshalTypes := []string{
-		"ProtobufSingle",
-		//"Protobuf",
-		"ProtobufList",
-	}
-
 	i := 0
 
-	for _, marshalType := range marshalTypes {
+	g.MarshalConfigs.Store(i, &gdp_config.MarshalConfig{
+		MarshalType:          "ProtobufSingle",
+		KafkaHeader:          false,
+		Protodelim:           false,
+		CreateDatabaseSchema: true,
+		MaxPollSend:          0,
+	})
 
-		for k := 0; k <= 1; k++ {
-			for d := 0; d <= 1; d++ {
-				kafka := k == 1
-				delim := d == 1
+	i++
+	g.MarshalConfigs.Store(i, &gdp_config.MarshalConfig{
+		MarshalType:          "Protobuf",
+		KafkaHeader:          false,
+		Protodelim:           true,
+		CreateDatabaseSchema: true,
+		MaxPollSend:          0,
+	})
 
-				if g.debugLevel > 10 {
-					log.Printf("initMarshalConfigs store i:%d", i)
-				}
+	i++
+	g.MarshalConfigs.Store(i, &gdp_config.MarshalConfig{
+		MarshalType:          "ProtobufList",
+		KafkaHeader:          false,
+		Protodelim:           true,
+		CreateDatabaseSchema: true,
+		MaxPollSend:          0,
+	})
 
-				//if kafka && !delim {
-				//if kafka || delim {
-				g.MarshalConfigs.Store(i, &gdp_config.MarshalConfig{
-					MarshalType: marshalType,
-					KafkaHeader: kafka,
-					Protodelim:  delim,
-				})
-				i++
-				//}
-			}
-		}
-	}
+	// add kafka headers -
+	i++
+	g.MarshalConfigs.Store(i, &gdp_config.MarshalConfig{
+		MarshalType:          "ProtobufSingle",
+		KafkaHeader:          true,
+		Protodelim:           false,
+		CreateDatabaseSchema: false, // clickhouse doesn't support reading the kafka header
+		MaxPollSend:          1,     // only send one, so demonstrate redpanda schema
+	})
+
+	i++
+	g.MarshalConfigs.Store(i, &gdp_config.MarshalConfig{
+		MarshalType:          "Protobuf",
+		KafkaHeader:          true,
+		Protodelim:           false,
+		CreateDatabaseSchema: false,
+		MaxPollSend:          1, // only send one, so demonstrate redpanda schema
+	})
+
+	i++
+	g.MarshalConfigs.Store(i, &gdp_config.MarshalConfig{
+		MarshalType:          "ProtobufList",
+		KafkaHeader:          true,
+		Protodelim:           false,
+		CreateDatabaseSchema: false,
+		MaxPollSend:          1, // only send one, so demonstrate redpanda schema
+	})
+
+	// marshalTypes := []string{
+	// 	"ProtobufSingle",
+	// 	"Protobuf",
+	// 	"ProtobufList",
+	// }
+
+	// i := 0
+	// for _, marshalType := range marshalTypes {
+
+	// 	for k := 0; k <= 1; k++ {
+	// 		for d := 0; d <= 1; d++ {
+	// 			kafka := k == 1
+	// 			delim := d == 1
+
+	// 			if g.debugLevel > 10 {
+	// 				log.Printf("initMarshalConfigs store i:%d", i)
+	// 			}
+
+	// 			store := false
+
+	// 			//if kafka && !delim {
+	// 			//if kafka || delim {
+	// 			if marshalType == "ProtobufSingle" {
+	// 				if !kafka || !delim {
+	// 					store = true
+	// 				}
+	// 			} else {
+	// 				if !kafka && delim {
+	// 					store = true
+	// 				}
+	// 			}
+
+	// 			if store {
+	// 				g.MarshalConfigs.Store(i, &gdp_config.MarshalConfig{
+	// 					MarshalType: marshalType,
+	// 					KafkaHeader: kafka,
+	// 					Protodelim:  delim,
+	// 				})
+	// 				i++
+	// 			}
+	// 		}
+	// 	}
 
 	g.SetTopic(g.MarshalConfigs)
 	g.SetFilename(g.MarshalConfigs)

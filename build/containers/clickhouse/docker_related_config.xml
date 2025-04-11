@@ -31,12 +31,10 @@
         <max_poll_interval_ms>900000</max_poll_interval_ms>
         <!--
         Increase poll timeout from 500ms to 9 seconds
-        Increaes flush from 7500ms to 10s
         https://kb.altinity.com/altinity-kb-integrations/altinity-kb-kafka/altinity-kb-kafka-main-parsing-loop/#important-settings
         -->
         <kafka_poll_timeout_ms>9000</kafka_poll_timeout_ms>
-        <!--
+        <!-- Increaes flush from 7500ms to 10s -->
         <kafka_flush_interval_ms>10000</kafka_flush_interval_ms>
-        -->
     </kafka>
 </clickhouse>

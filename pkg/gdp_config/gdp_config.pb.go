@@ -204,12 +204,14 @@ type MarshalConfig struct {
 	KafkaHeader bool   `protobuf:"varint,20,opt,name=kafka_header,json=kafkaHeader,proto3" json:"kafka_header,omitempty"`
 	// marshal type determines if protodelimiting occurs
 	// but we're documenting it to make it clear
-	Protodelim    bool   `protobuf:"varint,30,opt,name=protodelim,proto3" json:"protodelim,omitempty"`
-	SchemaID      uint32 `protobuf:"varint,40,opt,name=schema_i_d,json=schemaID,proto3" json:"schema_i_d,omitempty"`
-	Filename      string `protobuf:"bytes,50,opt,name=filename,proto3" json:"filename,omitempty"`
-	Topic         string `protobuf:"bytes,60,opt,name=topic,proto3" json:"topic,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Protodelim           bool   `protobuf:"varint,30,opt,name=protodelim,proto3" json:"protodelim,omitempty"`
+	CreateDatabaseSchema bool   `protobuf:"varint,40,opt,name=create_database_schema,json=createDatabaseSchema,proto3" json:"create_database_schema,omitempty"`
+	MaxPollSend          uint32 `protobuf:"varint,50,opt,name=max_poll_send,json=maxPollSend,proto3" json:"max_poll_send,omitempty"`
+	SchemaID             uint32 `protobuf:"varint,60,opt,name=schema_i_d,json=schemaID,proto3" json:"schema_i_d,omitempty"`
+	Filename             string `protobuf:"bytes,70,opt,name=filename,proto3" json:"filename,omitempty"`
+	Topic                string `protobuf:"bytes,80,opt,name=topic,proto3" json:"topic,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *MarshalConfig) Reset() {
@@ -261,6 +263,20 @@ func (x *MarshalConfig) GetProtodelim() bool {
 		return x.Protodelim
 	}
 	return false
+}
+
+func (x *MarshalConfig) GetCreateDatabaseSchema() bool {
+	if x != nil {
+		return x.CreateDatabaseSchema
+	}
+	return false
+}
+
+func (x *MarshalConfig) GetMaxPollSend() uint32 {
+	if x != nil {
+		return x.MaxPollSend
+	}
+	return 0
 }
 
 func (x *MarshalConfig) GetSchemaID() uint32 {
@@ -392,19 +408,22 @@ const file_gdp_config_v1_gdp_config_proto_rawDesc = "" +
 	"\xc8\x01\x01*\x05\x18\xe8\a(\x00R\n" +
 	"maxRetries\x12T\n" +
 	"\x0frequest_backoff\x18( \x01(\v2\x19.google.protobuf.DurationB\x10\xbaH\r\xc8\x01\x01\xaa\x01\a\"\x03\b\x84\a*\x00R\x0erequestBackoff:s\xbaHp\x1an\n" +
-	"\x0fGdp_Config.poll\x122Poll timeout must be less than poll poll_frequency\x1a'this.poll_frequency > this.poll_timeout\"\x8e\x02\n" +
+	"\x0fGdp_Config.poll\x122Poll timeout must be less than poll poll_frequency\x1a'this.poll_frequency > this.poll_timeout\"\xff\x02\n" +
 	"\rMarshalConfig\x12/\n" +
 	"\fmarshal_type\x18\n" +
 	" \x01(\tB\f\xbaH\t\xc8\x01\x01r\x04\x10\x01\x18PR\vmarshalType\x12)\n" +
 	"\fkafka_header\x18\x14 \x01(\bB\x06\xbaH\x03\xc8\x01\x01R\vkafkaHeader\x12&\n" +
 	"\n" +
 	"protodelim\x18\x1e \x01(\bB\x06\xbaH\x03\xc8\x01\x01R\n" +
-	"protodelim\x12+\n" +
+	"protodelim\x12<\n" +
+	"\x16create_database_schema\x18( \x01(\bB\x06\xbaH\x03\xc8\x01\x01R\x14createDatabaseSchema\x121\n" +
+	"\rmax_poll_send\x182 \x01(\rB\r\xbaH\n" +
+	"\xc8\x01\x00*\x05\x18\x90N(\x00R\vmaxPollSend\x12+\n" +
 	"\n" +
-	"schema_i_d\x18( \x01(\rB\r\xbaH\n" +
+	"schema_i_d\x18< \x01(\rB\r\xbaH\n" +
 	"\xc8\x01\x00*\x05\x18\x90N(\x00R\bschemaID\x12(\n" +
-	"\bfilename\x182 \x01(\tB\f\xbaH\t\xc8\x01\x00r\x04\x10\x01\x18PR\bfilename\x12\"\n" +
-	"\x05topic\x18< \x01(\tB\f\xbaH\t\xc8\x01\x00r\x04\x10\x01\x18PR\x05topicB\x86\x01\n" +
+	"\bfilename\x18F \x01(\tB\f\xbaH\t\xc8\x01\x00r\x04\x10\x01\x18PR\bfilename\x12\"\n" +
+	"\x05topic\x18P \x01(\tB\f\xbaH\t\xc8\x01\x00r\x04\x10\x01\x18PR\x05topicB\x86\x01\n" +
 	"\x11com.gdp_config.v1B\x0eGdpConfigProtoP\x01Z\x10./pkg/gdp_config\xa2\x02\x03GXX\xaa\x02\fGdpConfig.V1\xca\x02\fGdpConfig\\V1\xe2\x02\x18GdpConfig\\V1\\GPBMetadata\xea\x02\rGdpConfig::V1b\x06proto3"
 
 var (

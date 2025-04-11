@@ -39,16 +39,16 @@ compare_files() {
 	fi
 }
 
-file1="./proto/prometheus/v1/prometheus.proto";
-file2="./build/containers/clickhouse/format_schemas/prometheus.proto";
-compare_files "${file1}" "${file2}";
+# file1="./proto/prometheus/v1/prometheus.proto";
+# file2="./build/containers/clickhouse/format_schemas/prometheus.proto";
+# compare_files "${file1}" "${file2}";
 
 file1="./proto/prometheus/v1/prometheus_protolist.proto";
 file2="./build/containers/clickhouse/format_schemas/prometheus_protolist.proto";
 compare_files "${file1}" "${file2}";
 
-file1="./proto/clickhouse_protolist/v1/clickhouse_protolist.proto";
-file2="./build/containers/clickhouse/format_schemas/clickhouse_protolist.proto";
-compare_files "${file1}" "${file2}";
+# file1="./proto/clickhouse_protolist/v1/clickhouse_protolist.proto";
+# file2="./build/containers/clickhouse/format_schemas/clickhouse_protolist.proto";
+# compare_files "${file1}" "${file2}";
 
 # end

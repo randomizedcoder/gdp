@@ -7,6 +7,7 @@ lint:
     - STANDARD
 modules:
   - path: proto
+  #- path: proto/gdp_config
 deps:
   # https://github.com/bufbuild/protovalidate?tab=readme-ov-file#build-with-buf
   - buf.build/bufbuild/protovalidate

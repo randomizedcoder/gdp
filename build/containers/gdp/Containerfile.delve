@@ -58,9 +58,9 @@ COPY --from=build --chmod=544 /go/bin/dlv /dlv
 COPY --from=build --chmod=544 /go/bin/gdp /gdp
 
 # copy the proto, so xtcp can register the proto with the kafka schema registry
-COPY --from=build --chmod=444 /go/src/proto/prometheus/v1/prometheus.proto /
+#COPY --from=build --chmod=444 /go/src/proto/prometheus/v1/prometheus.proto /
 COPY --from=build --chmod=444 /go/src/proto/prometheus/v1/prometheus_protolist.proto /
-COPY --from=build --chmod=444 /go/src/proto/clickhouse_protolist/v1/clickhouse_protolist.proto /
+#COPY --from=build --chmod=444 /go/src/proto/clickhouse_protolist/v1/clickhouse_protolist.proto /
 
 # Prometheus
 EXPOSE 9088

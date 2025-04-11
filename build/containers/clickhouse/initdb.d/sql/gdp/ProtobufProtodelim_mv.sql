@@ -1,9 +1,9 @@
 --
--- gdp.ProtobufSingleProtodelim_mv.sql
+-- gdp.ProtobufProtodelim_mv.sql
 --
-DROP VIEW IF EXISTS gdp.ProtobufSingleProtodelim_mv;
+DROP VIEW IF EXISTS gdp.ProtobufProtodelim_mv;
 
-CREATE MATERIALIZED VIEW gdp.ProtobufSingleProtodelim_mv TO gdp.ProtobufSingleProtodelim
+CREATE MATERIALIZED VIEW gdp.ProtobufProtodelim_mv TO gdp.ProtobufProtodelim
   AS SELECT
     *,
 --    toDateTime64(Timestamp_Ns, 9, 'UTC') AS Timestamp_Ns,
@@ -17,9 +17,9 @@ CREATE MATERIALIZED VIEW gdp.ProtobufSingleProtodelim_mv TO gdp.ProtobufSinglePr
 --    Variable,
 --    Type,
 --    Value,
-  FROM gdp.ProtobufSingleProtodelim_kafka;
+  FROM gdp.ProtobufProtodelim_kafka;
 
--- SHOW CREATE TABLE gdp.ProtobufSingleProtodelim_mv;
+-- SHOW CREATE TABLE gdp.ProtobufProtodelim_mv;
 
 -- https://clickhouse.com/docs/sql-reference/statements/create/view#materialized-view
 

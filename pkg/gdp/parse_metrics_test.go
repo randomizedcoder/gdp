@@ -11,14 +11,14 @@ import (
 func TestParseMetricLine(t *testing.T) {
 	lines := []string{
 		`xtcp_counts{function="Deserialize",type="count",variable="start"} 51846`,
-		`xtcp_counts{function="GetNetlinkSocketFDs",type="counter",variable="start"} 8344`,
+		`xtcp_counts{function="GetNetlinkSocketFDs",type="count",variable="start"} 8344`,
 		`xtcp_counts{function="Netlinker",type="count",variable="RecvfromCalls"} 6.1467395368e+10`,
 		`xtcp_counts{function="Netlinker",type="count",variable="Timeout"} 1.6404240858e+10`,
 	}
 
 	expected := []*gdpp.Envelope_PromRecordCounter{
 		{Function: "Deserialize", Type: "count", Variable: "start", Value: 51846},
-		{Function: "GetNetlinkSocketFDs", Type: "counter", Variable: "start", Value: 8344},
+		{Function: "GetNetlinkSocketFDs", Type: "count", Variable: "start", Value: 8344},
 		{Function: "Netlinker", Type: "count", Variable: "RecvfromCalls", Value: 6.1467395368e+10},
 		{Function: "Netlinker", Type: "count", Variable: "Timeout", Value: 1.6404240858e+10},
 	}

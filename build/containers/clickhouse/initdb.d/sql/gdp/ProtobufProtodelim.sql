@@ -1,9 +1,9 @@
 --
--- gdp.ProtobufListKafka.sql
+-- gdp.ProtobufProtodelim.sql
 --
-DROP TABLE IF EXISTS gdp.ProtobufListKafka;
+DROP TABLE IF EXISTS gdp.ProtobufProtodelim;
 
-CREATE TABLE IF NOT EXISTS gdp.ProtobufListKafka (
+CREATE TABLE IF NOT EXISTS gdp.ProtobufProtodelim (
   Timestamp_Ns DateTime64(9,'UTC') CODEC(DoubleDelta, LZ4),
   Hostname LowCardinality(String) CODEC(LZ4),
   Pop LowCardinality(String) CODEC(LZ4),
@@ -23,12 +23,12 @@ TTL toDateTime(Timestamp_Ns) + INTERVAL 14 DAY;
 
 -- Note that ORDER BY clause implicitly specifies a primary key
 
--- SHOW CREATE TABLE gdp.ProtobufListKafka;
--- SELECT * FROM gdp.ProtobufListKafka LIMIT 20;
+-- SHOW CREATE TABLE gdp.ProtobufProtodelim;
+-- SELECT * FROM gdp.ProtobufProtodelim LIMIT 20;
 
 -- SELECT
 --   count(DISTINCT Poll_Counter)
--- FROM gdp.ProtobufListKafka;
+-- FROM gdp.ProtobufProtodelim;
 
 -- https://clickhouse.com/docs/guides/developer/ttl
 -- https://clickhouse.com/docs/sql-reference/statements/alter/ttl

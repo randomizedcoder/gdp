@@ -1,5 +1,5 @@
 #
-# xtcp buf.gen.yaml
+# gdp buf.gen.yaml
 # https://buf.build/docs/configuration/v2/buf-gen-yaml/
 #
 version: v2
@@ -51,7 +51,7 @@ plugins:
     #out: proto/gen/go
     opt:
       - generate_unbound_methods=true
-    #  - paths=source_relative
+      - paths=source_relative
   # https://github.com/grpc-ecosystem/grpc-gateway/blob/main/buf.gen.yaml
   # - local: protoc-gen-grpc-gateway
   #   out: pkg/flatxtcppb
